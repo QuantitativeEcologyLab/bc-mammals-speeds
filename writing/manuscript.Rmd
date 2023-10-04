@@ -1,0 +1,106 @@
+---
+title: \large Predicting how climate change and short-term weather will affect terrestrial mammals' movement
+author:
+  - name: Stefano Mezzini
+    email: stefano.mezzini@ubc.ca
+    institute: [braes, biol]
+  - name: Kirk Safford
+    institute: bcp
+  - name: Michael J. Noonan
+    email: michael.noonan@ubc.ca
+    institute: [braes, biol, cmps]
+institute:
+  - braes: Okanagan Institute for Biodiversity, Resilience, and Ecosystem Services, The University of British Columbia Okanagan, Kelowna, British Columbia, Canada.
+  - biol: Department of Biology, The University of British Columbia Okanagan, Kelowna, British Columbia, Canada.
+  - uofe: BC Parks
+  - cmps: Department of Computer Science, Math, Physics, and Statistics, The University of British Columbia Okanagan, Kelowna, British Columbia, Canada.
+bibliography: 'refs.bib'
+csl: 'csl.csl'
+fontsize: 12pt
+indent: true
+header-includes:
+    - \usepackage{setspace}\doublespacing # for double-spaced text
+    - \usepackage{indentfirst} # for indenting first line of each paragraph
+    - \usepackage[small]{titlesec} # for smaller font for headings
+    # - \usepackage{wrapfig} # for wrapping text around figures
+    - \usepackage{caption} # for more customization of captions
+    - \captionsetup[figure]{font=scriptsize, aboveskip=4pt, belowskip=-15pt}
+    - \usepackage{hanging} # for hanging indents in references
+subparagraph: true # needed for \usepackage[small]{titlesec}
+output:
+  bookdown::pdf_document2:
+    pandoc_args:
+      - '--lua-filter=scholarly-metadata.lua'
+      - '--lua-filter=author-info-blocks.lua'
+    toc: false
+    number_sections: false
+editor_options: 
+  chunk_output_type: console
+---
+
+<!-- place table of contents on a new page -->
+\newpage
+
+\singlespacing
+
+\tableofcontents
+
+<!-- start main body on a new page -->
+\newpage
+
+\doublespacing
+
+```{r setup, include=FALSE}
+# set chunk defaults: don't print code, images 75% of page width and centered
+knitr::opts_chunk$set(echo = FALSE, out.width = '\\textwidth',
+                      fig.align = 'center')
+```
+
+# Abstract
+
+
+
+# Introduction
+
+<!-- - central question -->
+How does temperature affect the movement rates of mammals in BC? How will mammals move differently in the next century in response to climate change?
+
+<!-- - relevance of the question -->
+Estimating the movement rates of mammals allows us to quantify: (1) changes in mammals' energetic expenditures due to changes in movement, (2) changes in human-wildlife conflict due to changes in activity rates.
+
+<!-- - address any questions answered in the discussion -->
+
+
+# Methods
+
+<!-- - data needed -->
+mammals' GPS location data, mammals' speeds, historical weather data, climate change projections
+
+<!-- - methods and analyses -->
+
+
+<!-- - how data were obtained -->
+
+
+# Results
+
+<!-- - show main trends -->
+
+# Discussion
+
+<!-- - how results answer central question -->
+
+
+<!-- - what it tells us about the broader field -->
+
+
+<!-- - address any questions presented in the discussion -->
+
+
+\clearpage <!-- to prevent figures from floating to the references -->
+
+\newpage <!-- place references on a separate page -->
+
+# References
+
+\hangparas{1em}{1} <!-- paragraphs hanging by width equal to font height -->
