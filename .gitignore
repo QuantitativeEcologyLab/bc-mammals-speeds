@@ -62,3 +62,6 @@ data/tracking-data/*.rds
 data/tracking-data/Elk in southwestern Alberta.csv
 data/tracking-data/webexportcaribou.xlsx
 data/tracking-data/webexportwolf.xlsx
+
+# ignore outlier diagnostic plots
+figures/outlier-diagnostics
