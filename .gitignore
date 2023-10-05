@@ -47,3 +47,18 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+# climateNA files are unnecessary and too large
+climate-na
+
+# ignore thumbnail files
+*.db
+
+# ignore telemetry data (some can be downloaded from links provided)
+data/tracking-data/Elk in southwestern Alberta-5978197885973201799.csv
+data/tracking-data/elk-readme.txt
+data/tracking-data/*.Rda
+data/tracking-data/*.rds
+data/tracking-data/Elk in southwestern Alberta.csv
+data/tracking-data/webexportcaribou.xlsx
+data/tracking-data/webexportwolf.xlsx
