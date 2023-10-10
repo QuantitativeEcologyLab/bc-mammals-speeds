@@ -2,7 +2,7 @@ This folder contains all `R` scripts used for analyses in this project (except f
 
 # estimate animals' speeds
 `1-compile-data.R` merges all telemetry data into a single tibble, which it saves as an rds file.
-`2-movement-models.R` fits variograms, movement models, and utilization distributions.
+`2-movement-models.R` fits variograms, movement models.
 
 # obtain (modeled) weather data
 `dowload-climate-data.R`
