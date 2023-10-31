@@ -4,6 +4,7 @@ library('purrr')     # for functional programming (map_***(), etc.)
 library('ctmm')      # for movement models
 library('lubridate') # for working with dates
 library('mapview')   # for interactive maps
+
 # source custom functions
 source('functions/outlier_plots.R') # to plot outlier diagnostic plots
 source('functions/check_animal.R') # to run diagnostic plots
@@ -78,47 +79,52 @@ out <- check_animal('BW008')
 plot_adj('BW008', max_speed = 3.5)
 plot_adj('BW008', max_angle = 178, max_speed = 1) # using a linear feature
 plot_adj('BW008', max_angle = 90, max_speed = 2) # realistic movement
-sf::st_as_sf(d$tel[[which(d$animal == 'BW008')]],
-             coords = c('location.long', 'location.lat'),
-             crs = 4326) %>%
-  # view data with a map background
-  mapview::mapview()
+plot_adj('BW008', max_angle = 170, max_speed = 0.5) # fine sampling
+out[out$angle > 170 & out$speed > 0.5, ] # 15-minute sampling
 
 # BW009
 out <- check_animal('BW009')
-plot_adj('BW009', max_angle = 175, max_speed = 1, n_adj = 4) # look closer
-plot_adj('BW009', max_angle = 179.7, max_speed = 1) # looks bad
-plot_adj('BW009', max_angle = 179.7, max_speed = 1, n_adj = 200) # using LF
-plot_adj('BW009', max_angle = 175, max_speed = 1, n_adj = 12) # seem ok
+plot_adj('BW009', max_angle = 179, max_speed = 1) # potential outlier
+plot_adj('BW009', max_angle = 179.7, max_speed = 1, n_adj=200) # uses path
+plot_adj('BW009', max_angle = 175, max_speed = 1, n_adj = 12) # ok
 plot_adj('BW009', max_angle = 170, min_angle = 175, max_speed = 1,
-         n_adj = 2) # linear features
-plot_adj('BW009', max_angle = 160, min_angle = 170, max_speed = 1,
-         n_adj = 2) # reasonable
+         n_adj = 20) # ok
+plot_adj('BW009', max_angle = 170, max_speed = 0.5) # reasonable
 
 # BW010
 out <- check_animal('BW010')
-plot_adj('BW010', max_speed = 3.5)
-plot_adj('BW010', max_speed = 2, max_angle = 135) # seems ok
+plot_adj('BW010', max_speed = 3.5) # ok
+plot_adj('BW010', max_speed = 1, max_angle = 170) # ok
+plot_adj('BW010', max_speed = 2, max_angle = 135) # ok
 
-# BW012 has one likely outlier; dropping it to be safe
+# BW012
 out <- check_animal('BW012')
 plot_adj('BW012', max_speed = 3)
-plot_adj('BW012', max_speed = 2, max_angle = 170)
-plot(as.telemetry(d$tel[[which(d$animal == 'BW012')]]), error = FALSE,
-     type = 'l', xlim = c(-2600, 0), ylim = c(300, 2200), col = 'black')
-plot(as.telemetry(d$tel[[which(d$animal == 'BW012')]])[out$speed > 2 &
-                                                         out$angle > 170,],
+plot_adj('BW012', max_speed = 1, max_angle = 170)
+# location is ok
+tel <- as.telemetry(d$tel[[which(d$animal == 'BW012')]])
+i <- which(out$speed > 2 & out$angle > 170)
+plot(tel, error = FALSE, type = 'l', xlim = c(-2600, 0),
+     ylim = c(300, 2200), col = 'black')
+plot(tel[i + -10:10, ],
+     error = FALSE, type = 'l', col = 'blue', lwd = 2, add = TRUE)
+plot(tel[i, ],
      error = FALSE, col = 'blue', pch = 19, add = TRUE)
-plot(as.telemetry(d$tel[[which(d$animal == 'BW012')]]), add = TRUE)
-flag_outlier('BW012', max_speed = 2, max_angle = 170, value = 1)
-out <- check_animal('BW012')
+plot(tel, add = TRUE)
+rm(tel, i)
+
+# BW013
+out <- check_animal('BW013')
+plot_adj('BW013', max_speed = 1, max_angle = 170) # uses linear features
 
 # BW014 has a clear GPS error
 out <- check_animal('BW014')
 plot_adj('BW014', max_speed = 4)
 flag_outlier(id = 'BW014', max_speed = 4, value = 1)
 out <- check_animal('BW014')
-plot_adj('BW014', max_speed = 2)
+plot_adj('BW014', max_speed = 2) # ok
+plot_adj('BW014', max_speed = 0.5, min_speed = 0.6, max_angle = 170,
+         n_adj = 30) # seems near a linear feature
 
 # B027
 out <- check_animal('BW027')
@@ -130,52 +136,40 @@ plot_adj('BW028', max_speed = 3) # not problematic
 
 # B029
 out <- check_animal('BW029')
-plot_adj('BW029', max_speed = 2, max_angle = 135) # need a finer scale
-plot_adj('BW029', max_speed = 2, max_angle = 135, n_adj = 2) # in DOP range
-plot_adj('BW029', max_speed = 2, max_angle = 135, n_adj = 3)
+plot_adj('BW029', max_speed = 2, max_angle = 175) # need a finer scale
+plot_adj('BW029', max_speed = 2, max_angle = 175, n_adj = 2) # ok
 
 # B031
 out <- check_animal('BW031')
-plot_adj('BW031', max_speed = 1, max_angle = 135) # need a finer scale
-plot_adj('BW031', max_speed = 1, max_angle = 135, n_adj = 1) # in DOP range
-plot_adj('BW031', max_speed = 1, max_angle = 135, n_adj = 5) # reasonable
+plot_adj('BW031', max_speed = 1, max_angle = 170) # need a finer scale
+plot_adj('BW031', max_speed = 1, max_angle = 170, n_adj = 5) # ok
 
 # B033: sharp and fast turns are near linear features
 out <- check_animal('BW033')
 plot_adj('BW033', max_speed = 1.5, max_angle = 90, n_adj = 5)
 
-# BW042nex
-out <- check_animal('BW042nex')
-plot_adj('BW042nex', max_speed = 2.5)
-
 # BW044nex
 out <- check_animal('BW044nex')
-plot_adj('BW044nex', max_speed = 4)
+plot_adj('BW044nex', max_speed = 1, max_angle = 170)
 
 # BW046nex
 out <- check_animal('BW046nex')
 plot_adj('BW046nex', max_speed = 1, max_angle = 175, min_speed = 3) # ok
 plot_adj('BW046nex', max_speed = 1, min_speed = 3, # problematic
-         max_angle = 135, min_angle = 175)
-i <- which(out$speed > 1 & out$speed < 3 &
-             out$angle > 135 & out$angle < 175)
-layout(t(0:1))
+         max_angle = 135, min_angle = 175, reset_layout = FALSE)
+i <- which(out$speed > 1 & out$speed < 3 & # likely hunting
+             out$angle > 135 & out$angle < 175) + 0:5
 points(location.lat ~ location.long,
        d$tel[[which(d$animal == 'BW046nex')]][i, ], col = 'blue', cex = 2)
 d$tel[[which(d$animal == 'BW046nex')]][i, 'outlier'] <- 1
-
-out <- check_animal('BW046nex')
-plot_adj('BW046nex', max_speed = 1, min_speed = 3, max_angle = 135) # ok
-
-# BW049nex
-out <- check_animal('BW042nex')
-plot_adj('BW042nex', max_speed = 2.5)
-
-# BW051
-out <- check_animal('BW051')
-plot_adj('BW051', max_speed = 1.5)
+plot_adj('BW046nex', max_speed = 1, max_angle = 170) # ok
 
 # Cervus elaphus (in progress: search for *?) ----
+
+#' *NOTE:* assuming movement at < 0.2 m/s is realistic, even if angle >
+#' 170 degrees since it's too hard to distinguish between movement and gps
+#' error at that scale, and the models acount for GPS error anyway.
+
 # E002
 out <- check_animal('E002')
 plot_adj('E002', max_speed = 0.4)
@@ -188,6 +182,7 @@ plot_adj('E003', max_speed = 0.5)
 # E006
 out <- check_animal('E006')
 plot_adj('E006', max_speed = 0.8) # ok
+plot_adj('E006', max_speed = 0.4, max_angle = 170) # outlier
 plot_adj('E006', max_speed = 0.4, max_angle = 170, map = TRUE) # outlier
 #' *? dt is much larger: struggling to find a location?*
 out[which(out$speed > 0.4 & out$angle > 170) + (-4:4), ]
