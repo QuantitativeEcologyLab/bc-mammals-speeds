@@ -12,6 +12,9 @@ flag_outlier <- function(id, max_speed = 0, max_distance = 0,
     out$distance >= max_distance &
     (out$angle >= max_angle | is.na(out$angle))
   tel <- d$tel[d$animal == id][[1]] # extract telemetry
+  if(is.logical(tel$outlier)) {
+    tel$outlier <- if_else(tel$outlier, 1, 0) # convert logical to numeric
+  }
   tel[! tel$outlier, ][o, 'outlier'] <- value # skip outliers and add flags
   d$tel[d$animal == id][[1]] <<- tel
 }
