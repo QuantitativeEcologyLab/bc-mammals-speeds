@@ -32,10 +32,10 @@ plot_adj <- function(id, n_adj = 10,
     unique() %>% # some values may be repeated
     sort()
   
-  if(length(problematic) > 50) {
+  if(length(problematic) > 50 & ! many) {
     stop(paste(
       paste(length(problematic), ' problematic points detected.'),
-      '  Check your max and min values, and set many = TRUE if necessary.',
+      '  Check your max and min values, and set `many = TRUE` if necessary.',
       '  (It may take a while to plot all the points...)',
       sep = '\n'))
   }
@@ -54,16 +54,27 @@ plot_adj <- function(id, n_adj = 10,
     pal <- khroma::color('romaO')(n_distinct(adj_long$group) + 1)
     pal <- pal[- length(pal)] # last and first are the same color
     
-    tel[adj_long$value, ] %>%
-      data.frame() %>%
-      bind_cols(adj_long) %>%
-      mutate(problematic = factor(value == problematic)) %>%
-      sf::st_as_sf(coords = c('location.long', 'location.lat'),
-                   crs = 4326) %>%
-      # view data with a map background
-      mapview::mapview(zcol = 'group',  col = 'black', lwd = 3,
-                       col.regions = pal, alpha.regions = 1,
-                       map.types = map_type)
+    if(many) {
+      tel[adj_long$value, ] %>%
+        data.frame() %>%
+        bind_cols(adj_long) %>%
+        sf::st_as_sf(coords = c('location.long', 'location.lat'),
+                     crs = 4326) %>%
+        # view data with a map background
+        mapview::mapview(col = 'black', lwd = 3, col.regions ='darkorange',
+                         alpha.regions = 1, map.types = map_type)
+    } else {
+      tel[adj_long$value, ] %>%
+        data.frame() %>%
+        bind_cols(adj_long) %>%
+        mutate(problematic = factor(value == problematic)) %>%
+        sf::st_as_sf(coords = c('location.long', 'location.lat'),
+                     crs = 4326) %>%
+        # view data with a map background
+        mapview::mapview(zcol = 'group',  col = 'black', lwd = 3,
+                         col.regions = pal, alpha.regions = 1,
+                         map.types = map_type)
+    }
   } else {
     # change to telemetry format (note: outliers already removed above)
     tel <- as.telemetry(tel)
