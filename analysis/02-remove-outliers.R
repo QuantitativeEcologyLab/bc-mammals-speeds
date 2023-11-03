@@ -164,11 +164,13 @@ points(location.lat ~ location.long,
 d$tel[[which(d$animal == 'BW046nex')]][i, 'outlier'] <- 1
 plot_adj('BW046nex', max_speed = 1, max_angle = 170) # ok
 
-# Cervus elaphus (in progress: search for *?) ----
+# Cervus elaphus (in progress: search for "#' **") ----
 
-#' *NOTE:* assuming movement at < 0.2 m/s is realistic, even if angle >
+#' *NOTE:* assuming movement at ~< 0.25 m/s is realistic, even if angle >
 #' 170 degrees since it's too hard to distinguish between movement and gps
-#' error at that scale, and the models acount for GPS error anyway.
+#' error at that scale, and the models account for GPS error anyway (which
+#' I assume to be 10 m since I don't have calibration data. Mike said most
+#' collars have an error ~10 m anyway).
 
 # E002
 out <- check_animal('E002')
@@ -183,17 +185,21 @@ plot_adj('E003', max_speed = 0.5)
 out <- check_animal('E006')
 plot_adj('E006', max_speed = 0.8) # ok
 plot_adj('E006', max_speed = 0.4, max_angle = 170) # outlier
-plot_adj('E006', max_speed = 0.4, max_angle = 170, map = TRUE) # outlier
-#' *? dt is much larger: struggling to find a location?*
+plot_adj('E006', max_speed = 0.4, max_angle = 170, map = TRUE) # see river
+#' dt is much larger: collar struggled to receive signal with tree cover
 out[which(out$speed > 0.4 & out$angle > 170) + (-4:4), ]
 'hours' %#% c(43282, 7254)
 flag_outlier('E006', max_speed = 0.4, max_angle = 170, value = 1)
 out <- check_animal('E006')
-plot_adj('E006', max_speed = 0.2, max_angle = 170) # hard to say
+plot_adj('E006', max_speed = 0.2, max_angle = 170) # ok
+
+# E007
+out <- check_animal('E007')
+plot_adj('E007', max_speed = 0.2, max_angle = 170) # ok
 
 # E008
 out <- check_animal('E008')
-plot_adj('E008', max_speed = 0.3)
+plot_adj('E008', max_speed = 0.3) # ok
 
 # E011: last point is outlier (keeping previous points bc many 0 speeds)
 out <- check_animal('E011')
@@ -204,13 +210,11 @@ flag_outlier('E011', max_speed = 0.4, value = 1)
 out <- check_animal('E011')
 plot_adj('E011', max_speed = 0.25)
 
+# E013
+out <- check_animal('E013')
+plot_adj('E013', max_speed = 0.2, max_angle = 170) # escaped something?
+
 # E015 has multiple GPS malfunctions
-out <- check_animal('E015')
-plot_adj('E015', max_speed = 10)
-flag_outlier(id = 'E015', max_speed = 10, value = 1) # surely outliers
-out <- check_animal('E015') # some fully stationary points (NaNs; errors)
-plot_adj('E015', max_speed = 1, max_angle = 90)
-flag_outlier(id = 'E015', max_speed = 1, max_angle = 90, value = 1)
 out <- check_animal('E015')
 plot_adj('E015', max_speed = 1, reset_layout = FALSE)
 # can't filter easily because the outliers don't have the max velocity
@@ -221,37 +225,81 @@ i <- d %>%
   slice(which(timestamp ==
                 as.POSIXct(out[which(out$speed > 0.6)[2], 't'])) +
           0:1) %>%
-  pull(i)
-points(location.lat ~ location.long,
-       filter(d, animal == 'E015')$tel[[1]][i, ],
-       col = 'blue', cex = 2, lwd = 3)
+  pull(i) %>%
+  first() + 0:10
+points(location.lat ~ location.long, cex = 2, lwd = 3, col = 'blue',
+       filter(d, animal == 'E015')$tel[[1]][i, ])
+lines(location.lat ~ location.long,
+      filter(d, animal == 'E015')$tel[[1]][i, ], lwd = 6, col = 'red3')
 d$tel[[which(d$animal == 'E015')]][i, 'outlier'] <- 1
 out <- check_animal('E015')
 plot_adj('E015', max_speed = 0.60) # track looks ok now
 
+# E016
+out <- check_animal('E016')
+plot_adj('E016', max_speed = 0.2, max_angle = 170) # one outlier
+plot_adj('E016', max_speed = 0.2, max_angle = 179) # use higher upper bound
+flag_outlier('E016', max_speed = 0.2, max_angle = 179, value = 1)
+out <- check_animal('E016')
+plot_adj('E016', max_speed = 0.2, max_angle = 170) # ok
+
 # E017
 out <- check_animal('E017')
-plot_adj('E017', max_speed = 0.6)
-plot_adj('E017', max_angle = 170, max_speed = 0.2) #' *? see SW: common*
+plot_adj('E017', max_speed = 0.6) # ok
+plot_adj('E017', max_angle = 170, max_speed = 0.2)
 
 # E019
-out <- check_animal('E019')
-plot_adj('E019', max_speed = 0.65, max_angle = 135) # possibly outliers
+out <- check_animal('E019') # many high speeds at angle > 170
+plot_adj('E019', max_speed = 0.65, max_angle = 135) # some outliers
 plot_adj('E019', max_speed = 0.65, max_angle = 160, reset_layout = FALSE)
 i <- which(out$speed > 0.65 & out$angle > 160)[c(1, 3)] # some outliers
 points(location.lat ~ location.long,
        d$tel[[which(d$animal == 'E019')]][i, ], cex = 2, col = 'blue')
-d$tel[[which(d$animal == 'E019')]][i, 'outlier'] <- 1 # no other outliers
-out <- check_animal('E019')
-plot_adj('E019', max_speed = 0.65, max_angle = 160) # ok
-plot_adj('E019', max_speed = 0.6, max_angle = 135, min_angle = 160) # ok
+d$tel[[which(d$animal == 'E019')]][i, 'outlier'] <- 1
+
+out <- check_animal('E019') # check other high speeds with angle > 160
+plot_adj('E019', max_speed = 0.4, max_angle = 135, reset_layout = FALSE)
+tel <- d$tel[[which(d$animal == 'E019')]]
+i <- which(out$speed > 0.4 & out$angle > 135)
+points(location.lat ~ location.long, cex = 1.5, col = 'black',
+       tel[! tel$outlier, ][i, ],
+       pch = as.character(0:(length(i) - 1)))
+'hour' %#% out[i, 'dt'] # consistent sampling
+
+# 0 is likely an error (erring on the side of caution)
+# 1 is consistent with other movement
+# 2 is likely an error
+# 3 is consistent with other movement
+# 4 is likely an error
+# 5 is realistic
+# 6 is likely an error
+# 7 is realistic
+# 8 is likely an error
+# 9 is likely an error
+i <- i[1 + c(0, 2, 4, 6, 8, 9)]
+i_id <- which(d$animal == 'E019')
+d$tel[[i_id]][! d$tel[[i_id]]$outlier, ][i, 'outlier'] <- 1
+# ensure correct locations were removed
+out <- check_animal('E019') # check other high speeds with angle > 160
+plot_adj('E019', max_speed = 0.4, max_angle = 135, reset_layout = FALSE)
+
+# E023
+out <- check_animal('E023')
+plot_adj('E023', max_speed = 1) # ok
+plot_adj('E023', max_speed = 0.6, min_speed = 1) # ok
+plot_adj('E023', max_speed = 0.3, max_angle = 170) # ok
+
+# E024
+out <- check_animal('E024')
+plot_adj('E024', max_speed = 0.4) # ok
+plot_adj('E024', max_speed = 0.3, max_angle = 170) # ok
+
+# E025
+out <- check_animal('E025')
+plot_adj('E025', max_speed = 0.3, max_angle = 170) # ok
 
 # E026
-#' *? CHECK THIS ONE HERE*
-#' fitting movement models with different levels of outliers removed to test
-#' change in mean speed see (`'functions/test_speeds.R'`)
-#' *takes a while to fit the models*
-#' does not have an unusual amount of data
+#' this elk does not have an unusual amount of data
 hist(map_int(filter(d, species == 'Cervus elaphus')$tel, nrow))
 abline(v = nrow(d$tel[[which(d$animal == 'E026')]]), lwd = 2)
 d$tel[[which(d$animal == 'E026')]] %>%
@@ -260,201 +308,155 @@ d$tel[[which(d$animal == 'E026')]] %>%
                crs = 4326) %>%
   mapview(map.types = 'Esri.WorldImagery', col.regions = 'darkorange',
           col = 'black', lwd = 2)
-out <- check_animal('E026') # sharp turns at high speeds
+out <- check_animal('E026') # many sharp turns at high speeds
 plot_adj('E026', max_speed = 0.6, max_angle = 135)
-plot_adj('E026', max_speed = 0.6, max_angle = 135, map = TRUE)
+plot_adj('E026', max_speed = 0.6, max_angle = 135, map = TRUE) # look north
 flag_outlier('E026', max_speed = 0.6, max_angle = 135, value = 1)
 
 out <- check_animal('E026')
-plot_adj('E026', max_speed = 0.4, max_angle = 135) # not sure of NW one
-plot_adj('E026', max_speed = 0.4, max_angle = 135, map = TRUE)
-plot_adj('E026', max_speed = 0.42, max_angle = 135) # all likely outliers
-flag_outlier('E026', max_speed = 0.42, max_angle = 135, value = 1)
+plot_adj('E026', max_speed = 0.4, max_angle = 170) # NW one is ok
+plot_adj('E026', max_speed = 0.4, max_angle = 170, map = TRUE)
+plot_adj('E026', max_speed = 0.42, max_angle = 170) # W one may also be ok
+plot_adj('E026', max_speed = 0.42, max_angle = 175) # W one may also be ok
+flag_outlier('E026', max_speed = 0.42, max_angle = 175, value = 1)
 
 out <- check_animal('E026')
-plot_adj('E026', max_speed = 0.35, max_angle = 135) # NW, middle, & NE ok?
-plot_adj('E026', max_speed = 0.35, min_speed = 0.4, max_angle = 160,
+plot_adj('E026', max_speed = 0.35, max_angle = 170) # NW, middle, & NE ok?
+plot_adj('E026', max_speed = 0.35, min_speed = 0.4, max_angle = 170,
          reset_layout = FALSE)
-i <- with(out, which(speed > 0.35 & speed < 0.4 & angle > 160))[c(2:4)]
+i <- with(out, which(speed > 0.35 & speed < 0.4 & angle > 160))[c(3:4)]
 points(location.lat ~ location.long,
        filter(d$tel[[which(d$animal == 'E026')]], ! outlier)[i, ],
        cex = 2, col = 'blue', lwd = 2)
 #' values in `i` assume outliers have been removed
-d$tel[[which(d$animal == 'E026')]][d$tel[[which(d$animal == 'E026')]]$outlier == 0, ][i, 'outlier'] <- 1
-# flag_outlier('E026', max_speed = 0.35, max_angle = 160, value = 1)
+i_tel <- which(d$animal == 'E026')
+d$tel[[i_tel]][d$tel[[i_tel]]$outlier == 0, ][i, 'outlier'] <- 1
 
 out <- check_animal('E026')
-plot_adj('E026', max_speed = 0.30, max_angle = 160) # these all look odd
-flag_outlier('E026', max_speed = 0.30, max_angle = 160, value = 1)
+plot_adj('E026', max_speed = 0.30, max_angle = 160) # likely ok
 
-out <- check_animal('E026')
-plot_adj('E026', max_speed = 0.25, max_angle = 170, n_adj = 3,
-         reset_layout = FALSE) # some outliers
-i <- which(out$speed > 0.25 & out$angle > 170)[c(1:3, 5:6)]
-points(location.lat ~ location.long,
-       d$tel[[which(d$animal == 'E026')]]
-       [d$tel[[which(d$animal == 'E026')]]$outlier == 0, ][i, ],
-       cex = 2, col = 'blue')
-d$tel[[which(d$animal == 'E026')]][d$tel[[which(d$animal == 'E026')]]$outlier == 0, ][i, 'outlier'] <- 1
-
-out <- check_animal('E026') # outliers jump away from ~stationary points
-plot_adj('E026', min_speed = 0.25, max_speed = 0.20, max_angle = 170,
-         n_adj = 3, reset_layout = FALSE)
-i <- which(out$speed > 0.20 & out$speed < 0.25 & out$angle > 170)
-points(location.lat ~ location.long,
-       d$tel[[which(d$animal == 'E026')]]
-       [d$tel[[which(d$animal == 'E026')]]$outlier == 0, ][i, ],
-       cex = 2, col = 'blue')
-length(i) # check length with figure
-d$tel[[which(d$animal == 'E026')]][d$tel[[which(d$animal == 'E026')]]$outlier == 0, ][i, 'outlier'] <- 1
-
-out <- check_animal('E026')
-plot_adj('E026', min_speed = 0.20, max_speed = 0.15, max_angle = 170,
-         n_adj = 3, reset_layout = FALSE) # likely all outliers
-i <- which(out$speed > 0.15 & out$speed < 0.20 & out$angle > 170)
-points(location.lat ~ location.long,
-       d$tel[[which(d$animal == 'E026')]]
-       [d$tel[[which(d$animal == 'E026')]]$outlier == 0, ][i, ],
-       cex = 2, col = 'blue')
-length(i) # missing point is the first point in the telemetry
-d$tel[[which(d$animal == 'E026')]][d$tel[[which(d$animal == 'E026')]]$outlier == 0, ][i, 'outlier'] <- 1
-
-out <- check_animal('E026')
-plot_adj('E026', min_speed = 0.15, max_speed = 0.13, max_angle = 170,
-         n_adj = 3) # at this point, the movmement is near realistic
+#' using an error-informed, continuous-time movement model substantially
+#' reduces the issues caused by GPS error. Additionally, there are so many
+#' elk data (for each individual and the number of elk, too) that a few
+#' values from a single individual will have little to no effect.
 
 # E027
-#' *? LIKELY HAS OUTLIERS*
 out <- check_animal('E027')
-plot_adj('E027', max_speed = 0.3, max_angle = 170, n_adj = 4)
-plot_adj('E027', max_speed = 0.3, max_angle = 170, n_adj = 2, map = TRUE)
+plot_adj('E027', max_speed = 0.3, max_angle = 170, n_adj = 4) # not all
+plot_adj('E027', max_speed = 0.3, max_angle = 175, n_adj = 4,
+         reset_layout = FALSE)
+i <- with(out, which(speed > 0.3 & angle > 175))[c(2, 3, 4, 5)]
+points(location.lat ~ location.long,
+       d$tel[[which(d$animal == 'E027')]][i, ],
+       cex = 2, col = 'blue', lwd = 2)
+'hours' %#% out$dt[i]
+d$tel[[which(d$animal == 'E027')]][i, 'outlier'] <- 2 # not fully sure
 
 # E030
-#' *? LIKELY HAS OUTLIERS*
 out <- check_animal('E030')
-plot_adj('E030', max_speed = 0.45)
-plot_adj('E030', max_speed = 0.3, min_speed = 0.45)
-plot_adj('E030', max_speed = 0.3, min_speed = 0.45, map = TRUE)
+plot_adj('E030', max_speed = 0.45) # ok
+plot_adj('E030', max_speed = 0.3, max_angle = 135) # generally ok
+plot_adj('E030', max_speed = 0.3, max_angle = 170) # possibly problematic
+flag_outlier('E030', max_speed = 0.3, max_angle = 170, value = 1)
+
+out <- check_animal('E030')
+plot_adj('E030', max_speed = 0.2, max_angle = 170) # ok
+
+# E032
+out <- check_animal('E032')
+plot_adj('E030', max_speed = 0.3, max_angle = 170) # ok
 
 # E033
 out <- check_animal(id = 'E033')
 plot_adj('E033', max_speed = 0.6)
 
-# E034
-out <- check_animal(id = 'E034')
-plot_adj('E034', max_speed = 0.6)
-
-# E035
-out <- check_animal(id = 'E035')
-plot_adj('E035', max_speed = 0.6)
-
-# E036 is ok
+# E036
 out <- check_animal(id = 'E036')
-plot_adj('E036', max_speed = 0.7) # the next point is along the same line 
-layout(t(0:1))
+# the next point is along the same line 
+plot_adj('E036', max_speed = 0.7, reset_layout = FALSE)
 points(location.lat ~ location.long, pch = 19,
        filter(d, animal == 'E036')$tel[[1]][0:1 + which(out$speed > 0.7),])
-layout(1)
+plot_adj('E036', max_speed = 0.6, reset_layout = FALSE) # ok
+
+# E037
+out <- check_animal(id = 'E037')
+plot_adj(id = 'E037', max_speed = 0.3, max_angle = 170) # ok
 
 # E040
 out <- check_animal(id = 'E040')
-plot_adj('E040', max_speed = 0.6)
+plot_adj('E040', max_speed = 0.35, max_angle = 160) # ok
 
-# E041
-out <- check_animal(id = 'E041')
-plot_adj('E041', max_speed = 0.5)
+# E042: range shift with highly stationary behavior
+out <- check_animal(id = 'E042')
+tel <- as.telemetry(d$tel[[which(d$animal == 'E042')]])
+range(tel$timestamp)
+plot(tel)
+plot_adj(id = 'E042', many = TRUE, map = TRUE, max_speed = 0)
+ctmm.guess(tel)
 
-# E044
-out <- check_animal(id = 'E044')
-plot_adj('E044', max_speed = 0.6)
-
-# E047
-out <- check_animal(id = 'E047')
-plot_adj('E047', max_speed = 0.8)
-
-# E048
-out <- check_animal(id = 'E048')
-plot_adj('E048', max_speed = 0.6)
-
-# E052
-out <- check_animal(id = 'E052')
-plot_adj('E052', max_speed = 0.5)
-
-# E056
-out <- check_animal(id = 'E056')
-plot_adj('E056', max_speed = 0.5)
-
-# E057
-out <- check_animal(id = 'E057')
-plot_adj('E057', max_speed = 0.55)
-
-# E061
-out <- check_animal(id = 'E061')
-plot_adj('E061', max_speed = 0.55)
-
-# E062
-out <- check_animal(id = 'E062')
-plot_adj('E062', max_speed = 0.5)
-
-# E063
-out <- check_animal(id = 'E063')
-plot_adj('E063', max_speed = 0.6)
-
-# E064
-out <- check_animal(id = 'E064')
-plot_adj('E064', max_speed = 0.6)
-
-# E065
-out <- check_animal(id = 'E065')
-plot_adj('E065', max_speed = 0.4)
+# E049
+out <- check_animal(id = 'E049')
+plot_adj('E049', max_speed = 0.4, max_angle = 170) # ok
+plot_adj('E049', max_speed = 0.3, min_speed = 0.4, max_angle = 170) # ok
 
 # E067
 out <- check_animal(id = 'E067')
-plot_adj('E067', max_speed = 0.6)
+plot_adj('E067', max_speed = 0.6, max_angle = 170) # ok
 
 # E068
 out <- check_animal(id = 'E068')
-plot_adj('E068', max_speed = 0.65)
-out[out$speed > 0.65, ] # first point is an outlier (see row names)
-layout(t(0:1))
+plot_adj('E068', max_speed = 0.65, reset_layout = FALSE)
+out[out$speed > 0.65, ] # 1st 2 points are right after capture (rownames)
 points(location.lat ~ location.long,
-       filter(d, animal == 'E068')$tel[[1]][1, ], col = 'blue', pch = 19)
-layout(1)
-out <- check_animal(id = 'E068') # just to create the plot again
-d[d$animal == 'E068', ]$tel[[1]]$outlier[1] <- 1
+       filter(d, animal == 'E068')$tel[[1]][1:2, ], col = 'blue', cex = 2)
+d[d$animal == 'E068', ]$tel[[1]]$outlier[1:2] <- 1
 out <- check_animal(id = 'E068')
+plot_adj('E068', max_speed = 0.4, max_angle = 170)
+plot_adj('E068', max_speed = 0.4, max_angle = 170, map = TRUE)
+flag_outlier('E068', max_speed = 0.4, max_angle = 170, value = 1)
+out <- check_animal(id = 'E068')
+plot_adj('E068', max_speed = 0.25, max_angle = 170) # ok
 
-# E073
-out <- check_animal(id = 'E073')
-plot_adj('E073', max_speed = 0.6)
+# E070
+out <- check_animal('E070')
+plot_adj('E070', max_speed = 0.4, max_angle = 135) # ok
 
 # E074
 out <- check_animal(id = 'E074')
-plot_adj('E074', max_speed = 0.5)
+plot_adj('E074', max_speed = 0.4, max_angle = 170) # ok
 
-# E076
-out <- check_animal(id = 'E076')
-plot_adj('E076', max_speed = 0.4)
-
-# E078
-out <- check_animal(id = 'E078')
-plot_adj('E078', max_speed = 0.5)
+# E075
+out <- check_animal(id = 'E075')
+plot_adj('E075', max_speed = 0.3, max_angle = 170) # ok
 
 # E079
 out <- check_animal(id = 'E079')
-plot_adj('E079', max_speed = 0.6)
+plot_adj('E079', max_speed = 0.6) # ok
 
 # E080
 out <- check_animal(id = 'E080')
-plot_adj('E080', max_speed = 0.8)
+plot_adj('E080', max_speed = 0.8) # ok
+plot_adj('E080', max_speed = 0.5, max_angle = 170, reset_layout = FALSE)
+i_tel <- which(d$animal == 'E080')
+i <- which(out$speed > 0.5 & out$angle > 170)[1:2]
+points(location.lat ~ location.long,
+       filter(d$tel[[i_tel]], ! outlier)[i, ], col = 'blue',
+       cex = 2)
+d$tel[[i_tel]][! d$tel[[i_tel]]$outlier, ]$outlier[i] <- 1
+out <- check_animal(id = 'E080')
+plot_adj('E080', max_speed = 0.5, max_angle = 170) # ok
+
+# E081
+out <- check_animal(id = 'E081')
+plot_adj('E081', max_speed = 0.2, max_angle = 170) # ok
 
 # E082
 out <- check_animal(id = 'E082')
-plot_adj('E082', max_speed = 0.45)
+plot_adj('E082', max_speed = 0.2, max_angle = 170) # ok
 
 # E083
 out <- check_animal(id = 'E083')
-plot_adj('E083', max_speed = 0.4)
+plot_adj('E083', max_speed = 0.3, max_angle = 135) # ok
 
 # E084 is not worth keeping
 out <- check_animal(id = 'E084')
@@ -466,195 +468,184 @@ d <- filter(d, animal != 'E084')
 
 # E085
 out <- check_animal(id = 'E085')
-plot_adj('E085', max_speed = 1) # path seems too long
-# unlikely that the deer moved so far and so fast
-filter(d, animal == 'E085') %>%
-  pull(tel) %>%
-  first() %>%
-  slice(seq(min(which(out$speed > 1)) - 10,
-            max(which(out$speed > 1)) + 10)) %>%
-  as.telemetry() %>%
-  plot()
-out <- check_animal(id = 'E085')
+plot_adj('E085', max_speed = 1) # definitely outliers (> 20 km!)
 flag_outlier(id = 'E085', max_speed = 1, value = 1)
-out <- check_animal('E085')
-plot_adj('E085', max_speed = 0.6) # seems ok
 
-# E086
-out <- check_animal(id = 'E086')
-plot_adj('E086', max_speed = 0.6)
+out <- check_animal(id = 'E085')
+plot_adj('E085', max_speed = 0.6) # maybe ok
+with(out[which(out$speed > 0.6) + -10:10, ], # likely outlier
+     plot('hours' %#% dt, dt * speed / 1e3,
+          col = as.numeric(-10:10 == 0) + 1,
+          pch = 19, ylab = 'SLD (dt * min speed, km)'))
+flag_outlier('E085', max_speed = 0.6, value = 1)
 
-# E087
-out <- check_animal(id = 'E087')
-plot_adj('E087', max_speed = 0.6)
-
-# E088
-out <- check_animal(id = 'E088')
-plot_adj('E088', max_speed = 0.45)
-
-# E091
-out <- check_animal(id = 'E091')
-plot_adj('E091', max_speed = 0.5)
-
-# E092
-out <- check_animal(id = 'E092')
-plot_adj('E092', max_speed = 0.5)
+out <- check_animal(id = 'E085')
+plot_adj('E085', max_speed = 0.2, max_angle = 135) # ok
 
 # E096
 out <- check_animal(id = 'E096')
-plot_adj('E096', max_speed = 0.6)
+plot_adj('E096', max_speed = 0.4, max_angle = 170) # ok
 
-# E097
-out <- check_animal(id = 'E097')
-plot_adj('E097', max_speed = 0.5)
-
-# E098
-out <- check_animal(id = 'E098')
-plot_adj('E098', max_speed = 0.5)
+# E100
+out <- check_animal(id = 'E100')
+plot_adj('E100', max_speed = 0.3, max_angle = 170) # ok
 
 # E101
 out <- check_animal(id = 'E101')
-plot_adj('E101', max_speed = 0.8)
+plot_adj('E101', max_speed = 0.4, max_angle = 170) # ok
 
-# E113
-out <- check_animal(id = 'E113')
-plot_adj('E113', max_speed = 0.5)
-
-# E114
-out <- check_animal(id = 'E114')
-plot_adj('E114', max_speed = 0.6)
+# E106
+# does not have HDOP for 2D fixes
+#' **UNSURE**
+d$tel[[which(d$animal == 'E106')]] %>%
+  group_by(gps.fix.type.raw) %>%
+  summarise(hdop = mean(dop, na.rm = TRUE))
+out <- check_animal(id = 'E106')
+plot_adj('E106', max_speed = 0.4, max_angle = 170) # large DOP values
+d$tel[[which(d$animal == 'E106')]] %>%
+  as.telemetry() %>%
+  data.frame() %>%
+  slice(which(out$speed > 0.4 & out$angle > 170)) %>%
+  pull(HDOP)
 
 # E115
+# collar is very error-prone in SW forest
 out <- check_animal(id = 'E115')
-plot_adj('E115', max_speed = 0.6)
-flag_outlier(id = 'E115', max_speed = 0.6, value = 1)
+plot_adj('E115', many = TRUE, map = TRUE)
+plot_adj('E115', max_speed = 0.4, max_angle = 170) # improbable
+plot_adj('E115', max_speed = 0.4, max_angle = 170, n_adj = 50)#but possible
+plot_adj('E115', max_speed = 0.4, max_angle = 175) # unlikely
+slice(d$tel[[which(d$animal == 'E115')]],
+      which(out$speed > 0.4 & out$angle > 175))$dop # low DOP
+flag_outlier(id = 'E115', max_speed = 0.4, max_angle = 175, value = 2)
+
 out <- check_animal('E115')
-plot_adj('E115', max_speed = 0.5)
+plot_adj('E115', max_speed = 0.3, max_angle = 170) # unlikely
+flag_outlier('E115', max_speed = 0.3, max_angle = 170, value = 2)
+
+out <- check_animal('E115')
+plot_adj('E115', max_speed = 0.1, max_angle = 170, many = TRUE) # ok
 
 # E116
 out <- check_animal(id = 'E116')
-plot_adj('E116', max_speed = 0.8)
-flag_outlier(id = 'E116', max_speed = 0.8, value = 2)
-out <- check_animal('E116')
-out[out$speed > 0.68, ]
-plot_adj('E116', max_speed = 0.68) # one potential outlier
-#' *NOTE:* using `rownames()` only works if `rowname < 999 = max(rowname)`
-i <- as.numeric(rownames(out[out$speed > 0.68 & out$distance > 6373, ]))
-layout(t(0:1))
-points(location.lat ~ location.long,
-       filter(d, animal == 'E116') %>%
-         pull(tel) %>%
-         first() %>%
-         filter(! outlier) %>%
-         slice(i),
-       cex = 2, col = 'blue')
-layout(1)
-i_tel <- which(as.numeric(filter(d, animal == 'E116')$tel[[1]]$timestamp)
-               == out$t[i])
-d$tel[[which(d$animal == 'E116')]][i_tel, 'outlier'] <- 1
-rm(i_tel, i)
+plot_adj('E116', max_speed = 0.4, max_angle = 170)
+flag_outlier(id = 'E116', max_speed = 0.4, max_angle = 170, value = 1)
 
-# E117
+out <- check_animal('E116')
+plot_adj('E116', max_speed = 0.8)
+flag_outlier(id = 'E116', max_speed = 0.8, value = 1)
+
+out <- check_animal('E116')
+plot_adj('E116', max_speed = 0.3, max_angle = 170) # improbable
+plot_adj('E116', max_speed = 0.3, max_angle = 175) # but not impossible
+
+# E117 has similar error patterns to E115
 out <- check_animal(id = 'E117')
 plot_adj('E117', max_speed = 0.7) # three outliers
+plot_adj('E117', max_speed = 0.7, map = TRUE)
 flag_outlier(id = 'E117', max_speed = 0.7, value = 1)
-out <- check_animal('E117')
-plot_adj('E117', max_speed = 0.6) # maybe just a skittish elk
-flag_outlier(id = 'E117', max_speed = 0.6, value = 1)
-out <- check_animal('E117')
-plot_adj('E117', max_speed = 0.55)
-flag_outlier(id = 'E117', max_speed = 0.55, value = 1)
-out <- check_animal('E117')
-plot_adj('E117', max_speed = 0.4) # too many more to check. seems ok?
 
-# E120
-out <- check_animal(id = 'E120')
-plot_adj('E120', max_speed = 0.7)
+out <- check_animal('E117')
+plot_adj('E117', many = TRUE, map = TRUE) # more errors when more forested
+plot_adj('E117', max_speed = 0.4, max_angle = 170)
 
-# E121
-out <- check_animal(id = 'E121')
-plot_adj('E121', max_speed = 0.5)
+plot_adj('E117', max_speed = 0.4, max_angle = 170, map = TRUE)
+flag_outlier(id = 'E117', max_speed = 0.4, max_angle = 170, value = 1)
+
+out <- check_animal('E117')
+plot_adj('E117', max_speed = 0.3, max_angle = 170) # maybe not all
+plot_adj('E117', max_speed = 0.3, max_angle = 175) # likely all
+plot_adj('E117', max_speed = 0.3, max_angle = 175, map = TRUE) # in forest
+flag_outlier(id = 'E117', max_speed = 0.3, max_angle = 175, value = 1)
+
+out <- check_animal('E117')
+#' **? still an exessive amount of sharp turns... remove?**
+#' *compare with E118*
 
 # E122
 out <- check_animal(id = 'E122')
-plot_adj('E122', max_speed = 0.5)
+plot_adj('E122', max_speed = 0.45) # ok
 
-# E123
-out <- check_animal(id = 'E123')
-plot_adj('E123', max_speed = 0.6)
-
-# E127
-out <- check_animal(id = 'E127')
-plot_adj('E127', max_speed = 0.4)
-
-# E128
-out <- check_animal(id = 'E128')
-plot_adj('E128', max_speed = 0.5)
+# E125
+out <- check_animal(id = 'E125')
+plot_adj('E125', max_speed = 0.4, max_angle = 150)
+flag_outlier('E125', max_speed = 0.4, max_angle = 150, value = 1)
+out <- check_animal(id = 'E125') # ok
 
 # E129
 out <- check_animal(id = 'E129')
-plot_adj('E129', max_speed = 0.6)
+plot_adj('E129', max_speed = 0.6) # ok
 
-# E130
-out <- check_animal(id = 'E130')
-plot_adj('E130', max_speed = 0.45)
+# E131
+out <- check_animal(id = 'E131')
+plot_adj('E131', max_speed = 0.3, max_angle = 170) # N one is ok
+plot_adj('E131', max_speed = 0.45, max_angle = 170) # outlier
+flag_outlier('E131', max_speed = 0.45, max_angle = 170, value = 1)
 
-# E135
-out <- check_animal(id = 'E135')
-plot_adj('E135', max_speed = 0.7)
+out <- check_animal(id = 'E131') # ok
 
-# E137
-out <- check_animal(id = 'E137')
-plot_adj('E137', max_speed = 0.5)
+# E132
+#' **? not sure what's going on here**
+out <- check_animal(id = 'E132', cap_dt = FALSE)
+out[out$dt > 20 %#% 'hours' & out$speed > 0.1, ]
+plot_adj('E132', max_speed = 0.1, max_dt = 20 %#% 'hours') # looks ok
+
+slice(data.frame(out),
+      sapply(which(out$dt > 20 %#% 'hours' & out$speed > 0.1),
+             function(.i) .i + -5:5) %>%
+        as.numeric() %>%
+        unique()) %>%
+  mutate(date = as.POSIXct(t),
+         high_speed = speed > 0.3)
+
+tel <- as.telemetry(d$tel[[which(d$animal == 'E132')]])
+plot(tel)
+plot(tel[out$dt > 20 %#% 'hours' & out$speed > 0.1, ], col = 'blue',
+     pch = 19, error = FALSE, add = TRUE)
+rm(tel)
+
+# E134
+out <- check_animal(id = 'E134')
+plot_adj('E134', max_speed = 0.5, max_angle = 170) # ok
 
 # E138
 out <- check_animal(id = 'E138')
-plot_adj('E138', max_speed = 0.8)
+plot_adj('E138', max_speed = 0.8) # ok
+plot_adj('E138', max_speed = 0.3, max_angle = 170) # ok
 
 # E139
 out <- check_animal(id = 'E139')
-plot_adj('E139', max_speed = 0.6)
+plot_adj('E139', max_speed = 0.3, max_angle = 170) # ok
 
 # E140
 out <- check_animal(id = 'E140')
 plot_adj('E140', max_speed = 0.6)
-flag_outlier('E140', max_speed = 0.6, value = 2) # speeds are ok
-out <- check_animal(id = 'E140')
-plot_adj('E140', max_speed = 0.35) # no issues
+flag_outlier('E140', max_speed = 0.6, value = 1)
 
-# saved 'data/tracking-data/all-tracking-data-cleaned-2023-10-14-15-54.rds'
-# E141
-out <- check_animal(id = 'E141')
-plot_adj('E141', max_speed = 0.5)
+out <- check_animal(id = 'E140') # ok
 
 # E142
 out <- check_animal(id = 'E142')
-plot_adj('E142', max_speed = 10)
 flag_outlier('E142', max_speed = 10, value = 1) # definitely an outlier
-out <- check_animal(id = 'E142')
-plot_adj('E142', max_speed = 0.8)
 
-# saved 'data/tracking-data/all-tracking-data-cleaned-2023-10-14-15-59.rds'
+out <- check_animal(id = 'E142')
+plot_adj('E142', max_speed = 0.8) # ok
+
+# E143
+out <- check_animal(id = 'E143')
+plot_adj('E143', max_speed = 0.2, max_angle = 170) # ok
 
 # E144
 out <- check_animal(id = 'E144')
-plot_adj('E144', max_speed = 1)
+plot_adj('E144', max_speed = 0.3, max_angle = 170) # all ok
 
-# E146
-out <- check_animal(id = 'E146')
-plot_adj('E146', max_speed = 0.8)
+# E147
+out <- check_animal(id = 'E147')
+plot_adj('E147', max_speed = 0.3, max_angle = 170) # ok
 
-# E150
-out <- check_animal(id = 'E150')
-plot_adj('E150', max_speed = 0.6)
-
-# E159
-out <- check_animal(id = 'E159')
-plot_adj('E159', max_speed = 0.8)
-
-# E160
-out <- check_animal(id = 'E160')
-plot_adj('E160', max_speed = 0.6)
+# E161
+out <- check_animal(id = 'E161')
+plot_adj('E161', max_speed = 0.3, max_angle = 170) # ok
 
 # E164: first point is definitely an outlier
 out <- check_animal(id = 'E164')
@@ -663,26 +654,48 @@ plot(location.lat ~ location.long, tel, type = 'b')
 points(location.lat ~ location.long, tel[1, ], col = 'red', pch = 19)
 rm(tel)
 d$tel[[which(d$animal == 'E164')]]$outlier[1] <- 1
-out <- check_animal(id = 'E164')
 
-# E168 has many "bounces", but all are at reasonable speeds
+out <- check_animal(id = 'E164')
+plot_adj('E164', max_speed = 0.3, max_angle = 160) # ok
+rm(tel)
+
+# E168
 out <- check_animal(id = 'E168')
-plot(as.telemetry(d$tel[[which(d$animal == 'E168')]]))
-plot_adj('E168', max_speed = 0.8)
+plot_adj('E168', max_speed = 0.3, max_angle = 170)
+flag_outlier('E168', max_speed = 0.3, max_angle = 170, value = 1)
+
+out <- check_animal(id = 'E168')
+plot_adj('E168', max_speed = 0.2, max_angle = 170) # ok
 
 # E170
 out <- check_animal(id = 'E170')
 plot_adj('E170', max_speed = 1)
+plot_adj('E170', max_speed = 0.3, max_angle = 170) # ok
 
 # E171
 out <- check_animal(id = 'E171')
-plot_adj('E171', max_speed = 0.6)
+plot_adj('E171', max_speed = 0.6) # ok
+plot_adj('E171', max_speed = 0.3, max_angle = 170) # ok
+
+# E172
+out <- check_animal(id = 'E172')
+plot_adj('E172', max_speed = 0.3, max_angle = 150) # ok
+
+# E178
+out <- check_animal(id = 'E178')
+plot_adj('E178', max_speed = 0.3, max_angle = 150) # ok
 
 # E179
 out <- check_animal(id = 'E179')
-plot_adj('E179', max_speed = 0.8)
+plot_adj('E179', max_speed = 0.8) # ok
 
-# saved 'data/tracking-data/all-tracking-data-cleaned-2023-10-15-10-21.rds'
+# E181
+out <- check_animal(id = 'E181')
+plot_adj('E181', max_speed = 0.5, max_angle = 170) # ok
+
+# E181
+out <- check_animal(id = 'E182')
+plot_adj('E182', max_speed = 0.3, max_angle = 170) # ok
 
 # Oreamnos americanus (need to clean) ----
 d %>%
@@ -693,58 +706,98 @@ d %>%
 
 d %>%
   filter(species == 'Oreamnos americanus') %>%
+  unnest(tel) %>%
+  pull(pdop) %>%
+  hist(main = 'Goat HDOP before as.telemetry()')
+
+d %>%
+  filter(species == 'Oreamnos americanus') %>%
   mutate(tel = map(tel, \(.t) data.frame(as.telemetry(.t)))) %>%
   unnest(tel) %>%
   pull(HDOP) %>%
   hist(main = 'Goat HDOP after as.telemetry()')
+
+# pdop is not in the telemetries
+d %>%
+  filter(species == 'Oreamnos americanus') %>%
+  mutate(tel = map(tel, \(.t) data.frame(as.telemetry(.t)))) %>%
+  unnest(tel) %>%
+  colnames()
+
+# substitute missing HDOP values with PDOP values
+d <- d %>%
+  mutate(
+    tel = if_else(species == 'Oreamnos americanus',
+                  map(tel, \(.t) {
+                    .t %>%
+                      mutate(hdop = if_else(is.na(hdop), pdop, hdop)) %>%
+                      return()
+                  }),
+                  tel))
+
+# ensure values are ok
+layout(1:2)
+d %>%
+  filter(species == 'Oreamnos americanus') %>%
+  unnest(tel) %>%
+  pull(pdop) %>%
+  hist(main = 'Goat HDOP before as.telemetry()')
+d %>%
+  filter(species == 'Oreamnos americanus') %>%
+  mutate(tel = map(tel, \(.t) data.frame(as.telemetry(.t)))) %>%
+  unnest(tel) %>%
+  pull(HDOP) %>%
+  hist(main = 'Goat HDOP after as.telemetry()')
+layout(1)
 
 # 30548
 # 35 outliers with massive deviation but zero speed
 out <- check_animal(id = '30548')
 filter(data.frame(out), distance > 2e6)
 flag_outlier('30548', max_distance = 2e6, value = 1)
-out <- check_animal(id = '30548')
-# another 19 outliers with large deviation but zero speed
+
+out <- check_animal(id = '30548') # 19 more outliers speed = 0
 filter(data.frame(out), distance > 5e4)
 flag_outlier('30548', max_distance = 5e4, value = 1)
+
 out <- check_animal(id = '30548')
-plot_adj('30548', max_speed = 0.5)
-# remaining points are ok within the range of the data
-plot_adj('30548', max_speed = 0.1, max_angle = 135, n_adj = 2)
+plot_adj('30548', max_speed = 0.4) # ok
+plot_adj('30548', max_speed = 0.3, max_angle = 135, n_adj = 5) # ok
+plot_adj('30548', max_speed = 0.1, max_angle = 135, map = TRUE) # ridges
+dt.plot(as.telemetry(d$tel[[which(d$animal == '30548')]]))
 
 # 30551
-# 35 outliers with massive deviation but zero speed
-out <- check_animal(id = '30551')
-filter(data.frame(out), distance > 2e6)
+out <- check_animal(id = '30551') # 35 outliers with speed = 0
 flag_outlier('30551', max_distance = 2e6, value = 1)
-# another 124 outliers, many of which with zero speed
-# many of these are at the end of the telemetry
-out <- check_animal(id = '30551')
-filter(data.frame(out), distance > 2e4)$speed
+
+out <- check_animal(id = '30551') # another 124, many with speed = 0
+plot_adj('30551', many = TRUE, map = TRUE)
 flag_outlier('30551', max_distance = 2e4, value = 1)
+
 # last point is still an outlier
-out <- check_animal(id = '30551', ci_level = 0.95)
 out <- check_animal(id = '30551')
 which(out$speed > 0.6) == nrow(out)
 flag_outlier('30551', max_speed = 0.6, value = 1)
+
 out <- check_animal(id = '30551')
-# remaining problematic points are ok within the range if the error
-plot_adj('30551', max_speed = 0.3, max_angle = 135)
+plot_adj('30551', max_speed = 0.25, max_angle = 135)
+plot_adj('30551', max_speed = 0.25, max_angle = 135, map = TRUE)
+plot_adj('30551', max_speed = 0.1, max_angle = 135)
+plot_adj('30551', max_speed = 0.1, max_angle = 135, map = TRUE)
+plot('hours' %#% out$dt, out$dt * out$speed/ 1e3)
 
 # 30561
 out <- check_animal(id = '30561')
-filter(data.frame(out), distance > 2e6)
 flag_outlier('30561', max_distance = 2e6, value = 1)
-# many more outliers with zero speed
+
 out <- check_animal(id = '30561')
-filter(data.frame(out), distance > 5e4)$speed
 flag_outlier('30561', max_distance = 5e4, value = 1)
-# one more outlier
+
 out <- check_animal(id = '30561')
 flag_outlier('30561', max_distance = 15e3, value = 1)
-# other smaller outliers, but ok within the range of the error
+
 out <- check_animal(id = '30561')
-plot_adj('30561', n_adj = 2, max_speed = 0.3, max_angle = 150)
+plot_adj('30561', n_adj = 10, max_speed = 0.3, max_angle = 150)
 plot_adj('30561', n_adj = 2, max_speed = 0.25, min_speed = 0.3,
          max_angle = 150)
 plot_adj('30561', n_adj = 2, max_speed = 0.25, min_speed = 0.3,
@@ -884,109 +937,139 @@ goats <- d %>%
              gps.satellite.count))
 write.csv(goats, 'data/goat-data.csv')
 
-# Puma concolor (need to clean) ----
-# 
-filter(d, species == 'Puma concolor') %>%
-  pull(tel) %>%
-  map_dfr(identity) %>%
-  filter(! outlier,
-         location.long > -119.8, location.long < -119.2,
-         location.lat > 49.7, location.lat < 49.92) %>%
-  sf::st_as_sf(coords = c('location.long', 'location.lat'),
-               crs = 4326) %>%
-  mapview(map.types = 'OpenStreetMap', col.regions = 'darkorange',
-          col = 'black', lwd = 2)
-
-# 246 has a clear outlier
+# Puma concolor (in progress: check for *?) ----
+# 246
 out <- check_animal(id = '246')
 plot_adj('246', max_speed = 3)
 flag_outlier('246', max_speed = 3, value = 1)
-# remaining data seem ok
+
 out <- check_animal(id = '246')
-plot_adj('246', max_speed = 0.5, n_adj = 3)
-plot_adj('246', max_speed = 0.2, n_adj = 3, max_angle = 170)
-plot_adj('246', max_speed = 0.2, n_adj = 3, max_angle = 170, map = TRUE)
+plot_adj('246', max_speed = 0.5, n_adj = 3) # ok
+plot_adj('246', max_speed = 0.2, max_angle = 170) # ok
+plot_adj('246', max_speed = 0.2, max_angle = 170, n_adj = 4, map = TRUE)
+# most southern point may be an outlier, but it looks ok
+plot_adj('246', max_speed = 0.2, max_angle = 177, min_angle = 178) # ok
+plot_adj('246', max_speed = 0.2, max_angle = 177, min_angle = 178,
+         n_adj = 4, map = TRUE)
+i <- which(out$speed > 0.2 & out$angle > 177 & out$angle < 178) + -5:5
+tel <- d$tel[[which(d$animal == '246')]]
+tel <- tel[! tel$outlier, ]
+plot(location.lat ~ location.long, tel[i, ], type = 'b',
+     pch = as.character(seq(length(i))))
+'hours' %#% out[i, 'dt']
+rm(i, tel, cols)
 
 # 272 has a clear speed outlier, but locations are ok
 out <- check_animal(id = '272')
 plot_adj('272', max_speed = 1) # data seem ok
+plot_adj('272', max_speed = 0.2, max_angle = 135) # ok
 
-# C3 has a clear outlier
+# C1
+out <- check_animal(id = 'C1')
+plot_adj('C1', max_speed = 0.2, max_angle = 170) # ok
+
+# C2
+out <- check_animal(id = 'C2')
+plot_adj('C2', max_speed = 0.2, max_angle = 170, n_adj = 20) # gps error
+plot_adj('C2', max_speed = 0.2, max_angle = 170, n_adj = 20, map = TRUE)
+flag_outlier('C2', max_speed = 0.2, max_angle = 170, value = 1)
+
+# C3
 out <- check_animal(id = 'C3')
 plot_adj('C3', max_speed = 1)
 plot_adj('C3', max_speed = 1, map = TRUE)
 flag_outlier('C3', max_speed = 1, value = 1)
 out <- check_animal(id = 'C3') # remaining data are ok
 plot_adj('C3', max_speed = 0.4, max_angle = 170, n_adj = 5) # ok
-plot_adj('C3', max_speed = 0.4, max_angle = 170, n_adj = 5, map = TRUE)
+plot_adj('C3', max_speed = 0.3, max_angle = 170, n_adj = 5) # ok
 
 # C4
 out <- check_animal(id = 'C4')
 plot_adj('C4', max_speed = 0.64)
 plot_adj('C4', max_speed = 0.64, map = TRUE)
-flag_outlier('C4', max_speed = 0.64, value = 1) # clear outlier (DOP = 1)
+flag_outlier('C4', max_speed = 0.64, value = 1)
 out <- check_animal(id = 'C4') # remaining data are ok
-plot_adj('C4', max_speed = 0.6)
-plot_adj('C4', max_speed = 0.6, map = TRUE)
+plot_adj('C4', max_speed = 0.2, max_angle = 170) # ok
 
 # C5
 out <- check_animal(id = 'C5')
-plot_adj('C5', max_speed = 0.55) # ok
+plot_adj('C5', max_speed = 0.6) # ok
 plot_adj('C5', max_speed = 0.4, max_angle = 170) # ok
+plot_adj('C5', max_speed = 0.3, max_angle = 170) # ok
 
 # C6
-#' **HERE**
 out <- check_animal(id = 'C6')
-plot_adj('C6', max_speed = 0.47, reset_layout = FALSE)
-# droping sothern point because DOP is not provided
-tel <- d$tel[[which(d$animal == 'C6')]]
-i <- which(out$speed > 0.47)[1]
-points(location.lat ~ location.long, tel[i, ], col = 'blue', cex = 2)
-d$tel[[which(d$animal == 'C6')]][i, 'outlier'] <- 1
-out <- check_animal(id = 'C6')
-plot_adj('C6', max_speed = 0.47) # check correct removal
-plot_adj('C6', max_speed = 0.1, max_angle = 170) #' *? some outliers, some ok*
-rm(tel, i)
+plot_adj('C6', max_speed = 0.4, max_angle = 170)
+flag_outlier('C6', max_speed = 0.4, max_angle = 170, value = 1)
+out <- check_animal(id = 'C6') # ok
 
-#' C08 *?looks like it ran and then returned to where it was before*
+# C7
+out <- check_animal(id = 'C7')
+plot_adj('C7', max_speed = 0.6, max_angle = 135)
+flag_outlier('C7', max_speed = 0.6, max_angle = 135, value = 1)
+out <- check_animal(id = 'C7') # ok
+plot_adj('C7', max_speed = 0.4, max_angle = 135) # ok
+
+# C8
 out <- check_animal(id = 'C8')
-plot_adj('C8', max_speed = 0.55)
+plot_adj('C8', max_speed = 0.55) # ok
 plot_adj('C8', max_speed = 0.55, map = TRUE)
+'hours' %#% out[which(out$speed > 0.55) + -5:5, 'dt']
+plot_adj('C8', max_speed = 0.2, max_angle = 170) # ok
+
+# C9
+out <- check_animal(id = 'C10')
+plot_adj('C10', max_speed = 0.2, max_angle = 170) # ok
+
+# C10
+out <- check_animal(id = 'C9')
+plot_adj('C9', max_speed = 0.2, max_angle = 170) # ok
 
 # C11
 out <- check_animal(id = 'C11')
 plot_adj('C11', max_speed = 2)
 flag_outlier('C11', max_speed = 2, value = 1)
-# remaining data seem ok
-out <- check_animal(id = 'C11')
-plot_adj('C11', max_speed = 0.8)
-plot_adj('C11', max_speed = 0.4, max_angle = 170) # NE ok
-plot_adj('C11', max_speed = 0.4, max_angle = 175, map = TRUE) #' *? outlier?*
-out[which(out$speed > 0.4 & out$angle > 175) + -3:3, ] # regular sampling
 
-# C12 has two points that look like consecutive errors
-#' *HERE*
+out <- check_animal(id = 'C11')
+plot_adj('C11', max_speed = 0.4, max_angle = 170) # NE ok
+plot_adj('C11', max_speed = 0.4, max_angle = 175, map = TRUE) # outlier
+'hours' %#% out[which(out$speed > 0.4 & out$angle > 175) + -3:3, 'dt']
+flag_outlier('C11', max_speed = 0.4, max_angle = 175, value = 1)
+
+out <- check_animal(id = 'C11')
+plot_adj('C11', max_speed = 0.3, max_angle = 170) # NE ok
+
+# C12
 out <- check_animal(id = 'C12')
-plot(out)
 plot_adj('C12', max_speed = 0.8)
 i <- which(out$speed > 0.8) + c(-1:0)
 layout(t(0:1))
 points(location.lat ~ location.long, d$tel[[which(d$animal == 'C12')]][i,],
        cex = 2, col = 'blue')
+out$dt[i] # distance seems excessive for 2-hour sampling
 d$tel[[which(d$animal == 'C12')]][i, 'outlier'] <- 2
 out <- check_animal(id = 'C12')
-plot_adj(id = 'C12', max_speed = 0.6) # remaining data are ok
+plot_adj(id = 'C12', max_speed = 0.2, max_angle = 170) # ok
 rm(i)
 
-# saved 'data/tracking-data/all-tracking-data-cleaned-2023-10-15-15-03.rds'
+# c13
+out <- check_animal(id = 'C13')
+plot_adj('C13', max_speed = 0.3, max_angle = 170) # ok
+
+# C14
+out <- check_animal('C14')
+plot_adj('C14', max_speed = 0.4, max_angle = 160) # ok
 
 # C16
 out <- check_animal('C16')
-plot_adj('C16', max_speed = 0.6)
+plot_adj('C16', max_speed = 0.3, max_angle = 170) # ok
+plot_adj('C16', max_speed = 0.3, max_angle = 170, map = TRUE) # used roads?
 
 # C17
 out <- check_animal('C17')
-plot_adj('C17', max_speed = 0.6)
+plot_adj('C17', max_speed = 0.2, max_angle = 170)
+#' **HERE**
+plot_adj('C17', max_speed = 0.35, max_angle = 179)
 
 # C18
 out <- check_animal('C18')
@@ -1034,9 +1117,18 @@ d$tel[[which(d$animal == 'C31')]][i, 'outlier'] <- 2
 plot(location.lat ~ location.long, d$tel[[which(d$animal == 'C31')]],
      col = factor(d$tel[[which(d$animal == 'C31')]]$outlier), pch = 19)
 
-# saved 'data/tracking-data/all-tracking-data-cleaned-2023-10-16-08-37.rds'
-
 # Mountain caribou (need to clean) ----
+filter(d, species == 'Rangifer tarandus') %>%
+  unnest(tel) %>%
+  pull(hdop) %>%
+  hist()
+
+filter(d, species == 'Rangifer tarandus') %>%
+  unnest(tel) %>%
+  pull(hdop) %>%
+  is.na() %>%
+  mean()
+
 # 92_prepenned
 ID <- '92_prepenned'
 out <- check_animal(ID)
@@ -1058,10 +1150,10 @@ out <- check_animal(ID)
 plot_adj(ID, max_speed = 0.4)
 
 
-# Ursus arctos horribilis ----
+# Ursus arctos horribilis (clean) ----
 # 197
 out <- check_animal('197')
-plot_adj('197', max_speed = 0.3, max_angle = 170, n_adj = 3)
+plot_adj('197', max_speed = 0.3, max_angle = 170) # ok
 
 # 242: first point is an outlier
 out <- check_animal('242')
@@ -1086,22 +1178,24 @@ plot_adj('260', max_speed = 0.4, max_angle = 170, n_adj = 10) # ok
 plot_adj('260', max_speed = 0.3, max_angle = 170, n_adj = 10, # unsure
          min_speed = 0.4)
 filter(data.frame(out), round(speed, 1) == 0.4 & angle > 170)
-0.3509840 * 3645 # reasonable distance in an hour
+0.3509840 * 3645 / 1e3 # reasonable distance in an hour
 
 # 262
 out <- check_animal('262')
-plot_adj('262', max_speed = 0.3, max_angle = 170, n_adj = 10)
+plot_adj('262', max_speed = 0.3, max_angle = 170) # ok
+plot_adj('262', max_speed = 0.3, max_angle = 135) # ok
 
 # 291
 out <- check_animal('291')
-plot_adj('291', max_speed = 0.3, max_angle = 170, n_adj = 10)
+plot_adj('291', max_speed = 0.3, max_angle = 170) # ok
 
 # 292
 out <- check_animal('292')
 plot_adj('292', max_speed = 1.2, n_adj = 10)
 flag_outlier(id = '292', max_speed = 1.2, value = 1)
 out <- check_animal('292')
-plot_adj('292', max_speed = 0.8, n_adj = 10) #' *moving near a road?*
+plot_adj('292', max_speed = 0.8) # ok
+plot_adj('292', max_speed = 0.8, map = TRUE) # moving along a river
 
 # 297
 out <- check_animal('297')
@@ -1111,7 +1205,7 @@ plot_adj('297', max_speed = 0.5) # ok
 out <- check_animal('317')
 plot_adj('317', max_speed = 1.5, reset_layout = FALSE) # previous = outlier
 i <- which(out$speed > 1.5) - 1
-points(location.lat ~ location.long, d$tel[[which(d$animal == '317')]][i, ],
+points(location.lat ~ location.long,d$tel[[which(d$animal == '317')]][i, ],
        cex = 2, col = 'blue')
 d$tel[[which(d$animal == '317')]][i, 'outlier'] <- 1
 out <- check_animal('317')
@@ -1124,12 +1218,7 @@ out <- check_animal('318')
 plot_adj('318', max_speed = 0.5) # ok
 plot_adj('318', max_speed = 0.4, min_speed = 0.5) # ok
 
-# 320
-out <- check_animal('320')
-plot_adj('320', max_speed = 0.3) # ok
-plot_adj('320', max_speed = 0.25) # ok
-
-# to save progress (cleaned) ----
+# to save progress ----
 saveRDS(object = d,
         file = paste0('data/tracking-data/all-tracking-data-cleaned-',
                       format(Sys.time(), '%Y-%m-%d-%H-%M'),
