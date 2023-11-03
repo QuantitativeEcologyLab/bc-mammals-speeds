@@ -1,7 +1,8 @@
 source('functions/find_angle.R')
 
 outlier_plots <- function(telemetry, units = FALSE, ci_level = 0,
-                          return = FALSE, reset_layout = TRUE) {
+                          return = FALSE, reset_layout = TRUE,
+                          cap_dt = TRUE) {
   layout(matrix(1:4, ncol = 2, byrow = TRUE))
   # plot of locations and velocities
   out <- outlie(telemetry, plot = TRUE)
@@ -19,11 +20,16 @@ outlier_plots <- function(telemetry, units = FALSE, ci_level = 0,
        ylab = 'Minimum speed (m/s)')
   axis(side = 1, at = seq(0, 180, by = 45))
   
-  # SLD isn;t useful because dt is clustered
-  XLIM <- c(0, min(max(out$dt / (1 %#% 'hour'), na.rm = TRUE), 24))
-  XLAB <- if_else(XLIM[2] == 24,
-                  'Time between locations (hours, capped at 24)',
-                  'Time between locations (hours)')
+  # SLD is often not useful because dt is too often clustered
+  if(cap_dt) {
+    XLIM <- c(0, min(max(out$dt / (1 %#% 'hour'), na.rm = TRUE), 24))
+    XLAB <- if_else(XLIM[2] == 24 & cap_dt,
+                    'Time between locations (hours, capped at 24)',
+                    'Time between locations (hours)')
+  } else {
+    XLIM <- c(0, max(out$dt / (1 %#% 'hour'), na.rm = TRUE))
+    XLAB <- 'Time between locations (hours)'
+  }
   plot(out$dt / (1 %#% 'hours'), out$speed, pch = 19, col = '#00000050',
        xlab = XLAB,
        ylab = 'Minimum speed (m/s)',
