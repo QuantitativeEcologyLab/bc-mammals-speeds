@@ -73,7 +73,7 @@ if(FALSE) { # initial diagnostic plots
   }
 }
 
-# Canis lupus (cleaned) ----
+# Canis lupus (clean) ----
 # BW008
 out <- check_animal('BW008')
 plot_adj('BW008', max_speed = 3.5)
@@ -937,7 +937,7 @@ goats <- d %>%
              gps.satellite.count))
 write.csv(goats, 'data/goat-data.csv')
 
-# Puma concolor (in progress: check for *?) ----
+# Puma concolor (clean) ----
 # 246
 out <- check_animal(id = '246')
 plot_adj('246', max_speed = 3)
@@ -1062,60 +1062,80 @@ plot_adj('C14', max_speed = 0.4, max_angle = 160) # ok
 
 # C16
 out <- check_animal('C16')
-plot_adj('C16', max_speed = 0.3, max_angle = 170) # ok
-plot_adj('C16', max_speed = 0.3, max_angle = 170, map = TRUE) # used roads?
+plot_adj('C16', max_speed = 0.3, max_angle = 170) # all outliers
+flag_outlier('C16', max_speed = 0.3, max_angle = 170, value = 1)
+out <- check_animal('C16') # ok
 
 # C17
 out <- check_animal('C17')
 plot_adj('C17', max_speed = 0.2, max_angle = 170)
-#' **HERE**
-plot_adj('C17', max_speed = 0.35, max_angle = 179)
+plot_adj('C17', max_speed = 0.35, max_angle = 170)
+# one of the two is the last point of the telemetry
+out[which((out$angle > 170 | is.na(out$angle)) & out$speed > 0.35), ]
+i <- which(out$angle > 170 & out$speed > 0.35)
+out[i, ]
+# don't want to flag last point
+d$tel[[which(d$animal == 'C17')]]$outlier[i] <- 1
+out <- check_animal('C17')
+plot_adj('C17', max_speed = 0.35, max_angle = 179) # ok
 
 # C18
 out <- check_animal('C18')
-plot_adj('C18', max_speed = 0.6)
+plot_adj('C18', max_speed = 0.6) # the two speeds are too similar
 flag_outlier('C18', max_speed = 0.6, value = 2)
 out <- check_animal('C18')
-plot_adj('C18', max_speed = 0.45)
+plot_adj('C18', max_speed = 0.2, max_angle = 170) # ok
+
+# C19
+out <- check_animal('C19')
+plot_adj('C19', max_angle = 160, max_speed = 0.4) # NW is ok
+plot_adj('C19', max_speed = 0.4, max_angle = 170)
+flag_outlier('C19', max_speed = 0.4, max_angle = 170, value = 1)
+
+out <- check_animal('C19') # ok
+
+# C23
+out <- check_animal('C23')
+plot_adj('C23', max_speed = 0.3, max_angle = 160) # S is ok
+plot_adj('C23', max_speed = 0.3, max_angle = 170) # unsure
+plot_adj('C23', max_speed = 0.3, max_angle = 170, n_adj = 3)
+out[which(out$angle > 170 & out$speed > 0.3) + -3:3, 'dt'] # too regular
+plot_adj('C23', max_speed = 0.3, max_angle = 170, map = TRUE) # outlier
+flag_outlier('C23', max_speed = 0.3, max_angle = 170, value = 1)
+out <- check_animal('C23')
+
+# C28
+out <- check_animal('C28')
+plot_adj('C28', max_speed = 0.3, max_angle = 170)
+flag_outlier('C28', max_speed = 0.3, max_angle = 170, value = 1)
+out <- check_animal('C28')
+plot_adj('C28', max_speed = 0.3, max_angle = 170)
 
 # C29
 out <- check_animal('C29')
-i <- which(out$speed > 0.5)[1]
-plot_adj('C29', max_speed = 0.5)
-layout(t(0:1))
-points(location.lat ~ location.long,
-       filter(d, animal == 'C29')$tel[[1]][i, ], col = 'blue', cex = 2)
-layout(1)
-d$tel[[which(d$animal == 'C29')]][i, 'outlier'] <- 2
-plot(location.lat ~ location.long, d$tel[[which(d$animal == 'C29')]],
-     col = factor(d$tel[[which(d$animal == 'C29')]]$outlier), pch = 19)
+plot_adj('C29', max_speed = 0.5, max_angle = 160)
+flag_outlier('C29', max_speed = 0.5, max_angle = 160, value = 1)
+out <- check_animal('C29')
 
 # C30
 out <- check_animal('C30')
-with(out, plot((t - lag(t)) / (1 %#% 'hour'), speed, xlim = c(0, 5),
-               col = factor(speed > 0.6), pch = 19))
 plot_adj('C30', max_speed = 0.6)
-layout(t(0:1))
-i <- which(out$speed > 0.6) + 0:1
-points(location.lat ~ location.long,
-       filter(d, animal == 'C30')$tel[[1]][i, ], col = 'blue', cex = 2)
-d$tel[[which(d$animal == 'C30')]][i, 'outlier'] <- 2
+flag_outlier('C30', max_speed = 0.6, value = 1)
 
-plot(location.lat ~ location.long, d$tel[[which(d$animal == 'C30')]],
-     col = factor(d$tel[[which(d$animal == 'C30')]]$outlier), pch = 19)
+out <- check_animal('C30')
+plot_adj('C30', max_speed = 0.3, max_angle = 170)
+flag_outlier('C30', max_speed = 0.3, max_angle = 170, value = 1)
+
+out <- check_animal('C30')
+plot_adj('C30', max_speed = 0.3, max_angle = 135) # ok
 
 # C31
 out <- check_animal('C31')
-plot_adj('C31', max_speed = 0.37)
-layout(t(0:1))
-i <- which(out$speed > 0.37)[2]
-points(location.lat ~ location.long,
-       filter(d, animal == 'C31')$tel[[1]][i, ], col = 'blue', cex = 2)
-layout(1)
-d$tel[[which(d$animal == 'C31')]][i, 'outlier'] <- 2
-
-plot(location.lat ~ location.long, d$tel[[which(d$animal == 'C31')]],
-     col = factor(d$tel[[which(d$animal == 'C31')]]$outlier), pch = 19)
+plot_adj('C31', max_speed = 0.37, max_angle = 160)
+out[which(out$speed > 0.37 & out$angle > 160) + -3:3, 'dt'] # too regular
+plot_adj('C31', max_speed = 0.37, max_angle = 160, map = TRUE) # outlier
+flag_outlier('C31', max_speed = 0.37, max_angle = 160, value = 1)
+out <- check_animal('C31') # ok
 
 # Mountain caribou (need to clean) ----
 filter(d, species == 'Rangifer tarandus') %>%
