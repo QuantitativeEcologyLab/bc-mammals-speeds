@@ -4,6 +4,8 @@ library('purrr')     # for functional programming (map_***(), etc.)
 library('ctmm')      # for movement models
 library('lubridate') # for working with dates
 library('mapview')   # for interactive maps
+library('ggplot2')   # for fancy plots
+theme_set(theme_bw())
 
 # source custom functions
 source('functions/outlier_plots.R') # to plot outlier diagnostic plots
@@ -53,8 +55,30 @@ d %>%
   mutate(has_dop = dop + hdop + pdop > 0) %>%
   arrange(desc(has_dop))
 
+#' **CHECK THIS**
+# some souther mountain caribou have both hdop and pdop hdop and dop, but
+# different values. other datasets are ok
+d %>%
+  unnest(tel) %>%
+  mutate(has_hdop = ! is.na(hdop),
+         has_dop = ! is.na(dop),
+         has_pdop = ! is.na(pdop)) %>%
+  group_by(dataset_name, has_hdop, has_dop, has_pdop) %>%
+  summarise(hdop = mean(hdop, na.rm = TRUE),
+            pdop = mean(pdop, na.rm = TRUE),
+            dop = mean(dop, na.rm = TRUE)) %>%
+  mutate(finite = map_int(1:n(),
+                          ~ sum(! is.nan(c(hdop[.x], pdop[.x], dop[.x])))))
+
+d %>%
+  filter(dataset_name == 'Rangifer_tarandus_southern_mountain') %>%
+  unnest(tel) %>%
+  filter(! is.na(hdop) & ! is.na(dop)) %>%
+  plot(hdop ~ dop, ., main = paste('n =', nrow(.)))
+abline(a = 0, b = 1, col =)
+
 # 0 == ok, 1 == outlier, 2 == unsure
-#' **NOTE:** `as.telemetry()` removes all rows with `outlier > 0`
+#' *NOTE:** `as.telemetry()` removes all rows with `outlier > 0`
 unique(unnest(d, tel)$outlier)
 
 # print outlier diagnostic plots
@@ -77,6 +101,7 @@ if(FALSE) { # initial diagnostic plots
 # BW008
 out <- check_animal('BW008')
 plot_adj('BW008', max_speed = 3.5)
+plot_adj('BW008', max_speed = 3.5, map = TRUE)
 plot_adj('BW008', max_angle = 178, max_speed = 1) # using a linear feature
 plot_adj('BW008', max_angle = 90, max_speed = 2) # realistic movement
 plot_adj('BW008', max_angle = 170, max_speed = 0.5) # fine sampling
@@ -186,8 +211,8 @@ out <- check_animal('E006')
 plot_adj('E006', max_speed = 0.8) # ok
 plot_adj('E006', max_speed = 0.4, max_angle = 170) # outlier
 plot_adj('E006', max_speed = 0.4, max_angle = 170, map = TRUE) # see river
-#' dt is much larger: collar struggled to receive signal with tree cover
-out[which(out$speed > 0.4 & out$angle > 170) + (-4:4), ]
+# dt is much larger: collar struggled to receive signal with tree cover
+'hours' %#% out[which(out$speed > 0.4 & out$angle > 170) + (-4:4), 'dt']
 'hours' %#% c(43282, 7254)
 flag_outlier('E006', max_speed = 0.4, max_angle = 170, value = 1)
 out <- check_animal('E006')
@@ -203,11 +228,23 @@ plot_adj('E008', max_speed = 0.3) # ok
 
 # E011: last point is outlier (keeping previous points bc many 0 speeds)
 out <- check_animal('E011')
-plot_adj('E011', max_speed = 0.4, n_adj = 20)
-plot_adj('E011', max_speed = 0.4, n_adj = 20, map = TRUE)
+plot_adj('E011', max_speed = 0.4, n_adj = 10)
+plot_adj('E011', max_speed = 0.4, n_adj = 10, map = TRUE)
+plot_adj('E011', max_speed = 0.4, n_adj = 9, reset_layout = FALSE)
 which(out$speed > 0.4) == nrow(out)
-flag_outlier('E011', max_speed = 0.4, value = 1)
+i_tel <- which(d$animal == 'E011')
+i <- (nrow(d$tel[[i_tel]]) - 7):nrow(d$tel[[i_tel]]) # drop last 8 points
+points(location.lat ~ location.long, d$tel[[i_tel]][i, ], col = 'blue',
+       cex = 2, pch = 19)
+d$tel[[i_tel]][i, 'outlier'] <- 1
+points(location.lat ~ location.long, d$tel[[i_tel]][i, ],
+       col = as.numeric(d$tel[[i_tel]]$outlier[i]) + 1, cex = 2)
+layout(1)
+
 out <- check_animal('E011')
+tel <- as.telemetry(d$tel[[i_tel]], mark.rm = TRUE)
+plot(tel[nrow(tel) + -10:0, ], error = FALSE, type = 'b',
+     pch = as.character(0:9))
 plot_adj('E011', max_speed = 0.25)
 
 # E013
@@ -495,18 +532,22 @@ out <- check_animal(id = 'E101')
 plot_adj('E101', max_speed = 0.4, max_angle = 170) # ok
 
 # E106
-# does not have HDOP for 2D fixes
-#' **UNSURE**
+#' **missing HDOP for 2D fixes; ~ half of 3D fixes don't have HDOP either**
 d$tel[[which(d$animal == 'E106')]] %>%
   group_by(gps.fix.type.raw) %>%
   summarise(hdop = mean(dop, na.rm = TRUE))
+d$tel[[which(d$animal == 'E106')]] %>%
+  group_by(gps.fix.type.raw) %>%
+  summarise(hdop = mean(! is.na(dop), na.rm = TRUE))
 out <- check_animal(id = 'E106')
-plot_adj('E106', max_speed = 0.4, max_angle = 170) # large DOP values
+plot_adj('E106', max_speed = 0.4, max_angle = 170) # large DOP values; ok
 d$tel[[which(d$animal == 'E106')]] %>%
   as.telemetry() %>%
   data.frame() %>%
   slice(which(out$speed > 0.4 & out$angle > 170)) %>%
   pull(HDOP)
+plot_adj('E106', max_speed = 0.3, max_angle = 170) # ok
+plot_adj('E106', max_speed = 0.2, max_angle = 170) # ok
 
 # E115
 # collar is very error-prone in SW forest
@@ -559,8 +600,13 @@ plot_adj('E117', max_speed = 0.3, max_angle = 175, map = TRUE) # in forest
 flag_outlier(id = 'E117', max_speed = 0.3, max_angle = 175, value = 1)
 
 out <- check_animal('E117')
-#' **? still an exessive amount of sharp turns... remove?**
-#' *compare with E118*
+# still an excessive amount of sharp turns with high speeds (compare E118)
+# dropping some of the data is better than dropping the whole animal
+flag_outlier('E117', max_speed = 0.1, max_angle = 130, value = 2)
+out <- check_animal('E117')
+
+# E118 (compare with E117 above)
+check_animal('E118', return_out = FALSE)
 
 # E122
 out <- check_animal(id = 'E122')
@@ -585,24 +631,41 @@ flag_outlier('E131', max_speed = 0.45, max_angle = 170, value = 1)
 out <- check_animal(id = 'E131') # ok
 
 # E132
-#' **? not sure what's going on here**
+#' some high minimum speeds at long sampling intervals for this individual
 out <- check_animal(id = 'E132', cap_dt = FALSE)
-out[out$dt > 20 %#% 'hours' & out$speed > 0.1, ]
-plot_adj('E132', max_speed = 0.1, max_dt = 20 %#% 'hours') # looks ok
+layout(matrix(c(0, 0, 0, 1), ncol = 2)) #
+abline(v = 20, col = 'red')
+abline(h = 0.08, col = 'red')
+i <- which(out$dt > 20 %#% 'hours' & out$speed > 0.08)
+out[i, ]
+# small range shift at the daily scale within home range
+plot_adj('E132', max_speed = 0.08, max_dt = 20 %#% 'hours')
 
-slice(data.frame(out),
-      sapply(which(out$dt > 20 %#% 'hours' & out$speed > 0.1),
-             function(.i) .i + -5:5) %>%
-        as.numeric() %>%
-        unique()) %>%
-  mutate(date = as.POSIXct(t),
-         high_speed = speed > 0.3)
-
+# look at points near values with excessively high speeds
+i_adj <- sapply(i, function(.i) .i + -10:10) %>%
+  as.data.frame() %>% # convert matrix to a data frame
+  pivot_longer(! c()) # use long format for a column of all values
 tel <- as.telemetry(d$tel[[which(d$animal == 'E132')]])
-plot(tel)
-plot(tel[out$dt > 20 %#% 'hours' & out$speed > 0.1, ], col = 'blue',
-     pch = 19, error = FALSE, add = TRUE)
-rm(tel)
+adj <- left_join(slice(data.frame(out), i_adj$value),
+                 slice(data.frame(tel), unique(i_adj$value)),
+                 by = c('t')) %>%
+  bind_cols(i_adj, .) %>%
+  mutate(date = as.POSIXct(t),
+         high_speed = speed > 0.08)
+layout(matrix(1:4, ncol = 2))
+for(g in seq(unique(i_adj$name))) {
+  g_name <- unique(i_adj$name)[g]
+  plot(y ~ x, filter(adj, name == g_name), type = 'l')
+  points(y ~ x, data.frame(tel[i, ][g, ]), col = 'blue', pch = 19)
+  rm(g, g_name)
+} # ok
+layout(1)
+
+# large dt with minor "range shifts" ==> ok
+plot('days' %#% dt ~ as.POSIXct(t), out[i_adj$value, ])
+points('days' %#% dt ~ as.POSIXct(t), out[i, ], col = 'blue', pch = 19)
+
+rm(i, i_adj, tel, adj)
 
 # E134
 out <- check_animal(id = 'E134')
@@ -708,7 +771,7 @@ d %>%
   filter(species == 'Oreamnos americanus') %>%
   unnest(tel) %>%
   pull(pdop) %>%
-  hist(main = 'Goat HDOP before as.telemetry()')
+  hist(main = 'Goat PDOP before as.telemetry()')
 
 d %>%
   filter(species == 'Oreamnos americanus') %>%
@@ -736,60 +799,104 @@ d <- d %>%
                   tel))
 
 # ensure values are ok
+all((d %>%
+       filter(species == 'Oreamnos americanus') %>%
+       unnest(tel) %>%
+       pull(hdop)) ==
+      (d %>%
+         filter(species == 'Oreamnos americanus') %>%
+         mutate(tel = map(tel, \(.t) data.frame(as.telemetry(.t)))) %>%
+         unnest(tel) %>%
+         pull(HDOP)))
+
+# all goats have some extreme outliers in Berlin
+filter(d, species == 'Oreamnos americanus') %>%
+  unnest(tel) %>%
+  ggplot() +
+  facet_wrap(~ animal) +
+  geom_hex(aes(location.long, location.lat), bins = 10) +
+  geom_vline(xintercept = 0, color = 'darkorange') +
+  scale_fill_continuous(limits = c(1, NA), trans = 'log10') +
+  theme(legend.position = c(0.8, 0.15))
+
+# could this be calibration data?
+cal <-
+  filter(d, species == 'Oreamnos americanus') %>%
+  unnest(tel) %>%
+  filter(location.long > 0) %>%
+  as.telemetry()
+sapply(cal, nrow)
 layout(1:2)
-d %>%
-  filter(species == 'Oreamnos americanus') %>%
-  unnest(tel) %>%
-  pull(pdop) %>%
-  hist(main = 'Goat HDOP before as.telemetry()')
-d %>%
-  filter(species == 'Oreamnos americanus') %>%
-  mutate(tel = map(tel, \(.t) data.frame(as.telemetry(.t)))) %>%
-  unnest(tel) %>%
-  pull(HDOP) %>%
-  hist(main = 'Goat HDOP after as.telemetry()')
+plot(cal, ylim = c(-100, 100))
+plot(cal, error = FALSE)
 layout(1)
 
-# 30548
-# 35 outliers with massive deviation but zero speed
-out <- check_animal(id = '30548')
-filter(data.frame(out), distance > 2e6)
-flag_outlier('30548', max_distance = 2e6, value = 1)
+# set all locations with long > 0 to outliers
+d <-
+  mutate(
+    d,
+    tel = if_else(species == 'Oreamnos americanus',
+                  true =
+                    map(tel, \(.d) {
+                      mutate(.d,
+                             outlier = if_else(location.long > 0, 1, 0),
+                             original_outliers = outlier == 1,
+                      )
+                    }),
+                  false = tel))
 
-out <- check_animal(id = '30548') # 19 more outliers speed = 0
+# 30548
+out <- check_animal(id = '30548') # 19 more outliers, some with speed = 0
 filter(data.frame(out), distance > 5e4)
 flag_outlier('30548', max_distance = 5e4, value = 1)
 
 out <- check_animal(id = '30548')
+hist(out$angle) # either a lot of GPS error or goats like sharp turns
+plot_adj('30548', max_angle = 180, map = TRUE, n_adj = 1)
 plot_adj('30548', max_speed = 0.4) # ok
 plot_adj('30548', max_speed = 0.3, max_angle = 135, n_adj = 5) # ok
-plot_adj('30548', max_speed = 0.1, max_angle = 135, map = TRUE) # ridges
-dt.plot(as.telemetry(d$tel[[which(d$animal == '30548')]]))
+plot_adj('30548', max_speed = 0.3, max_angle = 135, map = TRUE) # ridges
+plot_adj('30548', max_speed = 0.2, max_angle = 135) # ok
+plot_adj('30548', max_speed = 0.1, max_angle = 170, n_adj = 3) # ok
 
 # 30551
-out <- check_animal(id = '30551') # 35 outliers with speed = 0
-flag_outlier('30551', max_distance = 2e6, value = 1)
-
 out <- check_animal(id = '30551') # another 124, many with speed = 0
 plot_adj('30551', many = TRUE, map = TRUE)
+dt.plot(as.telemetry(d$tel[[which(d$animal == '30548')]]))
+# start and end are definitely not part of the goat's movement
+d$tel[[which(d$animal == '30551')]] %>%
+  filter(! outlier) %>%
+  ggplot(aes(location.long, location.lat, col = as.POSIXct(timestamp))) +
+  geom_path() +
+  geom_point() +
+  scale_color_viridis_c()
 flag_outlier('30551', max_distance = 2e4, value = 1)
 
-# last point is still an outlier
-out <- check_animal(id = '30551')
+out <- check_animal(id = '30551') # last point is still a clear outlier
+plot_adj('30551', max_speed = 0.6)
 which(out$speed > 0.6) == nrow(out)
 flag_outlier('30551', max_speed = 0.6, value = 1)
 
+out <- check_animal(id = '30551') # some minor outliers
+plot_adj('30551', max_speed = 0.2, max_angle = 170)
+flag_outlier('30551', max_speed = 0.2, max_angle = 170, value = 1)
+
 out <- check_animal(id = '30551')
-plot_adj('30551', max_speed = 0.25, max_angle = 135)
-plot_adj('30551', max_speed = 0.25, max_angle = 135, map = TRUE)
-plot_adj('30551', max_speed = 0.1, max_angle = 135)
-plot_adj('30551', max_speed = 0.1, max_angle = 135, map = TRUE)
-plot('hours' %#% out$dt, out$dt * out$speed/ 1e3)
+plot_adj('30551', max_speed = 0.1, max_angle = 170)
+flag_outlier('30551', max_speed = 0.1, max_angle = 170, value = 1)
+
+out <- check_animal(id = '30551')
+plot_adj('30551', max_speed = 0.4)
+flag_outlier('30551', max_speed = 0.4, value = 1)
+
+out <- check_animal(id = '30551')
+plot_adj('30551', max_speed = 0.1, max_angle = 170)
+flag_outlier('30551', max_speed = 0.1, max_angle = 170, value = 2)
+
+out <- check_animal(id = '30551')
+plot_adj('30551', max_speed = 0.1, max_angle = 135) # ok
 
 # 30561
-out <- check_animal(id = '30561')
-flag_outlier('30561', max_distance = 2e6, value = 1)
-
 out <- check_animal(id = '30561')
 flag_outlier('30561', max_distance = 5e4, value = 1)
 
@@ -797,27 +904,31 @@ out <- check_animal(id = '30561')
 flag_outlier('30561', max_distance = 15e3, value = 1)
 
 out <- check_animal(id = '30561')
-plot_adj('30561', n_adj = 10, max_speed = 0.3, max_angle = 150)
-plot_adj('30561', n_adj = 2, max_speed = 0.25, min_speed = 0.3,
-         max_angle = 150)
-plot_adj('30561', n_adj = 2, max_speed = 0.25, min_speed = 0.3,
-         max_angle = 150)
-plot_adj('30561', n_adj = 2, max_speed = 0.2, min_speed = 0.25,
-         max_angle = 150)
-plot_adj('30561', n_adj = 2, max_speed = 0.1, min_speed = 0.2,
-         max_angle = 150)
-plot(as.telemetry(d$tel[[which(d$animal == '30561')]], mark.rm = TRUE))
+plot_adj('30561', max_speed = 0.3, max_angle = 170)
+flag_outlier('30561', max_speed = 0.3, max_distance = 170, value = 1)
+
+out <- check_animal(id = '30561')
+plot_adj('30561', max_speed = 0.2, max_angle = 170)
+flag_outlier('30561', max_speed = 0.2, max_distance = 170, value = 1)
+
+out <- check_animal(id = '30561')
+plot_adj('30561', max_speed = 0.125, max_angle = 170)
+flag_outlier('30561', max_speed = 0.125, max_distance = 170, value = 1)
+
+out <- check_animal(id = '30561')
+plot_adj('30561', max_speed = 0.12, max_angle = 170) # ok
+plot_adj('30561', max_speed = 0.1, max_angle = 170) # ok
 
 # 30567
 out <- check_animal(id = '30567')
-filter(data.frame(out), distance > 2e6)
-flag_outlier('30567', max_distance = 2e6, value = 1)
+flag_outlier('30567', max_distance = 3e4, value = 1)
 
 out <- check_animal(id = '30567')
-flag_outlier('30567', max_distance = 3e4, value = 1)
-# some remaining potential outliers, but reasonable based on the error
-out <- check_animal(id = '30567')
 plot_adj('30567', max_speed = 0.4)
+flag_outlier('30567', max_speed = 0.4, value = 1)
+
+out <- check_animal(id = '30567')
+plot_adj('30567', max_speed = 0.2, max_angle = )
 
 # 30575
 # outliers with massive deviation
@@ -936,6 +1047,8 @@ goats <- d %>%
   select(! c(gps.fix.type.raw, NAV, HDOP, DOP, gps.dop,
              gps.satellite.count))
 write.csv(goats, 'data/goat-data.csv')
+
+# check all goats again -----
 
 # Puma concolor (clean) ----
 # 246
@@ -1137,22 +1250,258 @@ plot_adj('C31', max_speed = 0.37, max_angle = 160, map = TRUE) # outlier
 flag_outlier('C31', max_speed = 0.37, max_angle = 160, value = 1)
 out <- check_animal('C31') # ok
 
-# Mountain caribou (need to clean) ----
-filter(d, species == 'Rangifer tarandus') %>%
+# Boreal caribou (clean) ----
+
+# HSCEK063
+out <- check_animal('HSCEK063')
+plot_adj('HSCEK063', max_speed = 0.6) # ok
+plot_adj('HSCEK063', max_speed = 0.2, max_angle = 135) # ok
+
+# SCEK007b
+out <- check_animal('SCEK007b')
+plot_adj('SCEK007b', max_speed = 0.6, n_adj = 25) # ok
+
+# SCEK009
+out <- check_animal('SCEK009')
+plot_adj('SCEK009', max_speed = 0.4, max_angle = 135)
+plot_adj('SCEK009', max_speed = 0.4, max_angle = 135, n_adj = 5)
+plot_adj('SCEK009', max_speed = 0.4, max_angle = 135, n_adj = 30) # ok
+
+# SCEK020b migrates
+out <- check_animal('SCEK020b')
+plot(as.telemetry(d$tel[[which(d$animal == 'SCEK020b')]]))
+plot_adj('SCEK020b', max_speed = 0, many = TRUE, map = TRUE)
+
+# SCEK026b
+out <- check_animal('SCEK026b')
+plot_adj('SCEK026b', max_speed = 0.5, n_adj = 20) # ok
+
+# SCEK033
+out <- check_animal('SCEK033')
+plot_adj('SCEK033', max_speed = 1) # ok
+
+# SCEK036
+out <- check_animal('SCEK036')
+plot_adj('SCEK036', max_speed = 0.6) # ok
+
+# SCEK044
+out <- check_animal('SCEK044')
+plot_adj('SCEK044', max_speed = 1) # ok
+
+# SCEK047
+out <- check_animal('SCEK047')
+plot_adj('SCEK047', max_speed = 1) # ok
+
+# SCEK050
+out <- check_animal('SCEK050')
+plot_adj('SCEK050', max_speed = 0.2, max_angle = 135) # ok
+
+# SCEK079
+out <- check_animal('SCEK079')
+plot_adj('SCEK079', max_speed = 0.7) # ok
+
+# SCEK079b
+out <- check_animal('SCEK079b', cap_dt = FALSE)
+plot_adj('SCEK079b', max_speed = 0.4) # ok
+plot_adj('SCEK079b', max_speed = 0.15, max_angle = 170) # 2/4 outliers
+plot_adj('SCEK079b', max_speed = 0.23, max_angle = 170) # possible outliers
+flag_outlier('SCEK079b', max_speed = 0.23, max_angle = 170, value = 2)
+out <- check_animal('SCEK079b', cap_dt = FALSE)
+
+# SCEK114
+out <- check_animal('SCEK114', cap_dt = FALSE)
+plot_adj('SCEK114', max_speed = 0.4, max_angle = 160) # ok
+
+# SCEK119
+out <- check_animal('SCEK119', cap_dt = FALSE)
+plot_adj('SCEK119', max_speed = 0.6, max_angle = 160) # outlier
+flag_outlier('SCEK119', max_speed = 0.6, max_angle = 160, value = 2)
+out <- check_animal('SCEK119', cap_dt = FALSE)
+
+# SCEK133
+out <- check_animal('SCEK133', cap_dt = FALSE)
+plot_adj('SCEK133', max_speed = 0.9, max_angle = 170) # ok
+
+# SCEK136
+out <- check_animal('SCEK136', cap_dt = FALSE)
+plot_adj('SCEK136', max_speed = 0.6, max_angle = 170) # unsure
+plot_adj('SCEK136', max_speed = 0.6, max_angle = 170, n_adj = 40) # outlier
+plot_adj('SCEK136', max_speed = 0.6, max_angle = 170, n_adj = 40, map = T)
+flag_outlier('SCEK136', max_speed = 0.6, max_angle = 170, value = 1)
+out <- check_animal('SCEK136', cap_dt = FALSE)
+
+# SCEK161b
+out <- check_animal('SCEK161b', cap_dt = FALSE)
+plot_adj('SCEK161b', max_speed = 0.4, max_angle = 135) # ok
+
+# SCEK163
+out <- check_animal('SCEK163', cap_dt = FALSE)
+plot_adj('SCEK163', max_speed = 0.8) # ok
+
+# SCEK169
+#' **something is wrong with this track, likely delayed fixes**
+out <- check_animal('SCEK169', cap_dt = FALSE)
+hist(out$speed)
+plot_adj('SCEK169', max_speed = 10)
+flag_outlier('SCEK169', max_speed = 2, value = 1)
+
+out <- check_animal('SCEK169', cap_dt = FALSE)
+flag_outlier('SCEK169', max_speed = 2, value = 1)
+
+out <- check_animal('SCEK169', cap_dt = FALSE)
+flag_outlier('SCEK169', max_speed = 2, value = 1)
+
+out <- check_animal('SCEK169', cap_dt = FALSE)
+plot_adj('SCEK169', max_speed = 1) # ok
+
+# SCEK170
+#' **something is wrong with this track, likely delayed fixes**
+out <- check_animal('SCEK170', cap_dt = FALSE)
+hist(out$speed)
+plot_adj('SCEK170', max_speed = 2)
+flag_outlier('SCEK170', max_speed = 2, value = 1)
+
+out <- check_animal('SCEK170', cap_dt = FALSE)
+plot_adj('SCEK170', max_speed = 2)
+flag_outlier('SCEK170', max_speed = 2, value = 1)
+
+out <- check_animal('SCEK170', cap_dt = FALSE)
+plot_adj('SCEK170', max_speed = 2)
+flag_outlier('SCEK170', max_speed = 2, value = 1)
+
+out <- check_animal('SCEK170', cap_dt = FALSE)
+plot_adj('SCEK170', max_speed = 1)
+flag_outlier('SCEK170', max_speed = 1, value = 1)
+
+out <- check_animal('SCEK170', cap_dt = FALSE) # ok
+
+# SCEK176
+out <- check_animal('SCEK176')
+plot_adj('SCEK176', max_speed = 0.6) # ok
+
+# SCEK177
+out <- check_animal('SCEK177')
+plot_adj('SCEK177', max_speed = 0.2, max_angle = 170)
+plot_adj('SCEK177', max_speed = 0.2, max_angle = 170, n_adj = 5)
+flag_outlier('SCEK177', max_speed = 0.2, max_angle = 170, value = 1)
+out <- check_animal('SCEK177', cap_dt = FALSE)
+which.max(out$dt, na.rm = T) # ok
+nrow(out)
+
+# SCEK181
+out <- check_animal('SCEK181', cap_dt = FALSE)
+hist(out$speed)
+plot_adj('SCEK181', max_speed = 2, many = TRUE)
+flag_outlier('SCEK181', max_speed = 2, value = 1)
+
+out <- check_animal('SCEK181', cap_dt = FALSE)
+plot_adj('SCEK181', max_speed = 2)
+flag_outlier('SCEK181', max_speed = 2, value = 1)
+
+out <- check_animal('SCEK181', cap_dt = FALSE)
+plot_adj('SCEK181', max_speed = 2)
+flag_outlier('SCEK181', max_speed = 2, value = 1)
+
+out <- check_animal('SCEK181', cap_dt = FALSE)
+plot_adj('SCEK181', max_speed = 0.5) # ok
+
+# SCEK185
+out <- check_animal('SCEK185')
+plot_adj('SCEK185', max_speed = 0.3) # ok
+
+# SCEK194
+out <- check_animal('SCEK194')
+plot_adj('SCEK194', max_speed = 0.15, max_angle = 170, # one outlier
+         reset_layout = FALSE)
+i <- which(out$angle > 170 & out$speed > 0.15)[2]
+points(location.lat ~ location.long,
+       d$tel[[which(d$animal == 'SCEK194')]][i, ],
+       col = 'blue', cex = 2)
+d$tel[[which(d$animal == 'SCEK194')]]$outlier[i] <- 1
+out <- check_animal('SCEK194')
+
+# SCEK201
+out <- check_animal('SCEK201')
+range('hours' %#% out$dt, na.rm = TRUE)
+plot_adj('SCEK201', max_speed = 0.3, max_angle = 170, n = 50)
+flag_outlier('SCEK201', max_speed = 0.3, max_angle = 170, value = 1)
+
+out <- check_animal('SCEK201')
+plot_adj('SCEK201', max_speed = 0.15, max_angle = 170, n_adj = 30)
+flag_outlier('SCEK201', max_speed = 0.15, max_angle = 170, value = 1)
+
+out <- check_animal('SCEK201')
+plot_adj('SCEK201', max_speed = 0.1, max_angle = 170, n_adj = 30) # ok
+
+# SCEK204
+out <- check_animal('SCEK204')
+plot_adj('SCEK204', max_angle = 170, max_speed = 0.1) # ok
+
+# SCEK206
+out <- check_animal('SCEK206')
+plot_adj('SCEK206', max_distance = 15000)
+out[out$distance > 15000, ] # last two points are outliers
+nrow(out)
+flag_outlier('SCEK206', max_distance = 15000, value = 1)
+out <- check_animal('SCEK206')
+
+# SCEK212
+out <- check_animal('SCEK212')
+plot_adj('SCEK212', max_speed = 0.25, max_angle = 150) # ok
+
+# SCEK213
+out <- check_animal('SCEK213')
+plot_adj('SCEK213', max_speed = 0.25, max_angle = 150) # ok
+
+# SCEK214
+out <- check_animal('SCEK214')
+plot_adj('SCEK214', max_speed = 0.25, max_angle = 150) # ok
+
+# SCEK216
+out <- check_animal('SCEK216')
+plot_adj('SCEK216', max_speed = 0.4, max_angle = 135) # ok
+
+# SCEK238
+out <- check_animal('SCEK238')
+plot_adj('SCEK238', max_speed = 0.5) # ok
+
+# Southern mountain caribou (in progress, see "#' **") ----
+filter(d, dataset_name == 'Rangifer_tarandus_southern_mountain') %>%
   unnest(tel) %>%
   pull(hdop) %>%
+  hist(main = 'Mountain caribou HDOP')
+
+#' **some rowns have both`hdop` and `dop` values**
+filter(d, dataset_name == 'Rangifer_tarandus_southern_mountain') %>%
+  unnest(tel) %>%
+  mutate(missing_hdop = is.na(hdop),
+         missing_dop = is.na(dop)) %>%
+  group_by(dataset_name, missing_hdop, missing_dop) %>%
+  summarise(hdop = mean(hdop, na.rm = TRUE),
+            pdop = mean(pdop, na.rm = TRUE),
+            dop = mean(dop, na.rm = TRUE))
+
+#' **some have substantially different non-NA values for `hdop` and `dop`**
+filter(d, dataset_name == 'Rangifer_tarandus_southern_mountain') %>%
+  unnest(tel) %>%
+  filter(! is.na(hdop) & ! is.na(dop)) %>%
+  transmute(diff = hdop - dop) %>%
+  pull(diff) %>%
   hist()
 
-filter(d, species == 'Rangifer tarandus') %>%
+# check date ranges
+filter(d, dataset_name == 'Rangifer_tarandus_southern_mountain') %>%
   unnest(tel) %>%
-  pull(hdop) %>%
-  is.na() %>%
-  mean()
+  group_by(animal) %>%
+  summarise(range = diff(range(as.POSIXct(timestamp)))) %>%
+  pull(range) %>%
+  as.numeric() %>%
+  hist(xlab = 'Days')
 
 # 92_prepenned
 ID <- '92_prepenned'
 out <- check_animal(ID)
-plot_adj(ID, max_speed = 0.35)
+plot_adj(ID, max_speed = 0.3)
 
 # 101_prepenned
 ID <- '101_prepenned'
@@ -1167,8 +1516,35 @@ plot_adj(ID, max_speed = 0.1, min_speed = 0.2, max_angle = 170) # ok
 # 104_prepenned
 ID <- '104_prepenned'
 out <- check_animal(ID)
-plot_adj(ID, max_speed = 0.4)
+plot_adj(ID, max_speed = 0.4) # ok
 
+# 105_prepenned
+ID <- '105_prepenned'
+out <- check_animal(ID)
+plot_adj(ID, max_speed = 0.1, max_angle = 150) # ok
+
+# 109_prepenned
+ID <- '109_prepenned'
+out <- check_animal(ID)
+plot_adj(ID, max_speed = 0.07, max_angle = 170) # ok
+
+# 117_prepenned
+ID <- '117_prepenned'
+out <- check_animal(ID)
+plot_adj(ID, max_speed = 0.1) # ok
+
+# 132_prepenned
+ID <- '132_prepenned'
+out <- check_animal(ID)
+diff(range(as.POSIXct(out$t))) # only 15.5 days of data
+plot_adj(ID, max_speed = 0.08) # ok
+plot('hours' %#% out$dt)
+plot_adj(ID, max_dt = 12 %#% 'hours') # ok
+
+# 152_prepenned
+ID <- '152_prepenned'
+out <- check_animal(ID)
+plot_adj(ID, max_speed = 0.1, max_angle = 135) # ok
 
 # Ursus arctos horribilis (clean) ----
 # 197
