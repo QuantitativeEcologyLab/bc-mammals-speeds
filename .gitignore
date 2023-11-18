@@ -68,3 +68,6 @@ data/tracking-data/goat-data.csv
 
 # ignore outlier diagnostic plots
 figures/outlier-diagnostics
+
+# nc raster files from ECMWF
+*.nc
