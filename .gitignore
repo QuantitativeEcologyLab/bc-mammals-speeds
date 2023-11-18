@@ -63,7 +63,8 @@ data/tracking-data/Elk in southwestern Alberta.csv
 data/tracking-data/webexportcaribou.xlsx
 data/tracking-data/webexportwolf.xlsx
 data/tracking-data/oreamnos-americanus
+data/tracking-data/goat-calibration-data.csv
+data/tracking-data/goat-data.csv
 
 # ignore outlier diagnostic plots
 figures/outlier-diagnostics
-
