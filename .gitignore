@@ -72,8 +72,9 @@ figures/outlier-diagnostics
 # nc raster files from ECMWF
 *.nc
 
-# folder with climateBC software
+# folders with ClimateBC and ClimateNA software
 Climatebc_v742
+ClimateNA_v742
 
 # gcm files from ClimateBC
 *.gcm
