@@ -15,13 +15,16 @@ d <-
     # convert data frames to telemetry objects
     tel = map(tel, \(x) as.telemetry(x, mark.rm = TRUE)),
     # add calibration-informed error or a reasonable guess
-    tel = if_else(species == 'Oreamnos americanus',
-                  map(tel, \(x) {
+    tel = if_else(condition = species == 'Oreamnos americanus',
+                  true = map(tel, \(x) {
                     uere(x) <- goat_uere
                     return(x)
                   }),
-                  map(tel, \(x) {
-                    x$error <- 10
+                  false = map(tel, \(x) {
+                    # not changing default errors: assuming errors of 10 m
+                    prior <- uere(x) # extract calibration object
+                    prior$DOF[] <- 2 # low DOF for large uncertainty
+                    uere(x) <- prior # assign prior to the data
                     return(x)
                   })),
     variogram = map(tel, \(x) ctmm.guess(data = x,
@@ -35,4 +38,4 @@ d <-
                               weights = TRUE),
              .progress = 'UDs'))
 
-saveRDS(d, 'models/movement-models.rds')
+saveRDS(d, paste0('models/movement-models-', Sys.Date(), '.rds'))
