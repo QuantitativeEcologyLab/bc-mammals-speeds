@@ -11,7 +11,6 @@ goat_uere <-
 
 d <-
   readRDS('data/tracking-data/all-tracking-data-cleaned-2023-11-17-16-04.rds') %>%
-  head(2) %>%
   mutate(
     # convert data frames to telemetry objects
     tel = map(tel, \(x) as.telemetry(x, mark.rm = TRUE)),
@@ -27,7 +26,8 @@ d <-
                   })),
     variogram = map(tel, \(x) ctmm.guess(data = x,
                                          CTMM = ctmm(error = TRUE),
-                                         interactive = FALSE)),
+                                         interactive = FALSE),
+                    .progress = 'Variograms'),
     movement_model = map(1:n(), \(i) ctmm.select(data = tel[[i]],
                                                  CTMM = variogram[[i]]),
                          .progress = 'Movement models'),
