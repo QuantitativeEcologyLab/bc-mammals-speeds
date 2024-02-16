@@ -2,8 +2,7 @@ library('dplyr')     # for data wrangling (mutate(), %>%, etc.)
 library('tidyr')     # for data wrangling (nest(), unnest(), pivot_*, etc.)
 library('purrr')     # for functional programming (map_***(), etc.)
 library('ctmm')      # for movement models
-# library('lubridate') # for working with dates
-# library('mapview')   # for interactive maps
+library('lubridate') # for working with dates
 library('ggplot2')   # for fancy plots
 theme_set(theme_bw())
 
@@ -37,7 +36,7 @@ variograms <- function() {
   N <- ceiling(sqrt(nrow(d)))^2
   layout(matrix(1:N, ncol = sqrt(N), byrow = TRUE))
   for(i in 1:nrow(d)) {
-    ctmm.guess(as.telemetry(d$tel[[i]]))
+    ctmm.guess(as.telemetry(d$tel[[i]]), interactive = FALSE)
     title(d$animal[i])
   }
   layout(1)
@@ -59,7 +58,7 @@ d <- d %>%
 # plot projected telemetries
 ggplot(d, aes(x, y, color = hours)) +
   facet_wrap(~ animal, scales = 'free') +
-  geom_path(size = 1) +
+  geom_path(linewidth = 1) +
   geom_point(aes(size = HDOP), alpha = 0.3) +
   scale_size(limits = range(d$HDOP)) +
   scale_color_gradientn(colors = khroma::color('bright')(6))
@@ -96,7 +95,7 @@ d %>%
 
 d <- select(d, ! c(x, y, hours, distance))
 
-# only 3D locations
+# all locations are 3D locations
 table(d$class)
 
 # test the UERE object
@@ -113,4 +112,5 @@ goats %>%
   `uere<-`(goat_uere) %>%
   plot(ylim = c(-30e3, 20e3), add = TRUE, col = 'black')
 
-write.csv(x = d, 'data/goat-calibration-data.csv')
+write.csv(x = d, 'data/tracking-data/goat-calibration-data.csv',
+          row.names = FALSE)
