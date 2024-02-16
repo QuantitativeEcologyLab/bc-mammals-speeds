@@ -14,7 +14,7 @@ source('functions/plot_adj.R') # to plot 20 adjacent locations
 source('functions/flag_outlier.R') # to mark outliers
 source('functions/remove_outlier_flags.R') # to start over with an animal
 
-# import the full dataset ----
+# dataset checks ----
 # some NA timestamps (not enough to make a difference)
 readRDS('data/tracking-data/all-tracking-data-not-cleaned.rds') %>%
   filter(is.na(timestamp)) %>%
@@ -33,6 +33,7 @@ readRDS('data/tracking-data/all-tracking-data-not-cleaned.rds') %>%
   mutate(outlier = if_else(outlier, 1, 0)) %>%
   filter(! is.na(DOP) + ! is.na(gps.dop) > 1)
 
+# import the full dataset ----
 # import the dataset after dropping NAs
 d <- readRDS('data/tracking-data/all-tracking-data-not-cleaned.rds') %>%
   filter(! is.na(timestamp)) %>%
@@ -1045,11 +1046,12 @@ out <- check_animal(id = '30648')
 plot_adj('30648', max_speed = 0.2, max_angle = 170) # ok
 plot_adj('30648', max_speed = 0.1, max_angle = 175) # ok
 
+# save goat data as a separate file
 goats <- d %>%
   filter(species == 'Oreamnos americanus') %>%
   unnest(tel) %>%
-  select(! c(gps.fix.type.raw, NAV, pdop, dop, gps.satellite.count))
-write.csv(goats, 'data/tracking-data/goat-data.csv')
+  select(! c(pdop, dop, gps.fix.type.raw, NAV, gps.satellite.count))
+write.csv(goats, 'data/tracking-data/goat-data.csv', row.names = FALSE)
 
 # Puma concolor (clean) ----
 # 246
