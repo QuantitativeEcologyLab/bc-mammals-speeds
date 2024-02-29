@@ -81,3 +81,6 @@ ClimateNA_v742
 
 # ignore phylopics
 figures/phylopic/*.svg
+
+# ignore old code
+analysis/old-code
