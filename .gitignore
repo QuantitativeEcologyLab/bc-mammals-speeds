@@ -80,7 +80,7 @@ ClimateNA_v742
 *.gcm
 
 # ignore phylopics
-figures/phylopic/*.svg
+figures/phylopics
 
 # ignore old code
 analysis/old-code
