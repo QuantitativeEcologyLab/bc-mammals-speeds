@@ -1,0 +1,75 @@
+---
+title: "Stefano Mezzini"
+output: pdf_document
+date: '`r Sys.Date()`'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Generating the data
+
+```{r, message=FALSE}
+library('dplyr') # for data wrangling
+library('mgcv')  # for GAMs
+
+calc_p_move <- function(temp_c) {
+  brms:::inv_logit(- 0.005 * (temp_c - 10)^2 + 0.1)
+}
+
+seq(-10, 30, by = 0.01) %>%
+  plot(., calc_p_move(.), type = 'l', ylim = c(0, 1))
+
+calc_speed <- function(temp_c) {
+  exp(0.05 * temp_c) - exp(0.2 * (temp_c - 25))
+}
+
+seq(-10, 30, by = 0.01) %>%
+  plot(., calc_speed(.), type = 'l')
+
+d <-
+  tibble(temp_c = runif(n = 1e4, -10, 30),
+         p_move = calc_p_move(temp_c),
+         speed = calc_speed(temp_c),
+         # speed is 0 if not moving and rgamma if moving
+         est_speed = rbinom(n = length(temp_c), size = 1, prob = p_move) *
+           rgamma(n = length(temp_c), speed)) %>%
+  arrange(temp_c)
+
+# check the means and the speed estimates
+plot(p_move ~ temp_c, d, type = 'l')
+plot(speed ~ temp_c, d, type = 'l')
+plot(est_speed ~ temp_c, d, pch = 19, col = '#00000030')
+
+# make a matrix where 1st column contains the response observations and
+# the 2nd column indexes the distribution (family) from which it comes.
+d2 <-
+  bind_rows(
+    # binomial data
+    mutate(d,
+           y = cbind(if_else(est_speed > 0, 1, 0), 1),
+           parameter = 'p_moving'),
+    # gamma data given that the animal is moving
+    d %>%
+      filter(est_speed > 0) %>%
+      mutate(y = cbind(est_speed, 2),
+             parameter = 'speed')) %>%
+  mutate(parameter = factor(parameter))
+```
+
+# Fitting the model
+
+```{r}
+m <- gam(formula = y ~ s(temp_c, k = 15, by = parameter),
+         family = gfam(list(binomial(link = 'logit'),
+                            Gamma(link = 'log'))),
+         data = d2,
+         method = 'REML')
+
+layout(matrix(1:4, ncol = 2, byrow = TRUE))
+plot(m, scale = 0, scheme = 1)
+plot(brms:::logit(p_move) ~ temp_c, arrange(d, temp_c), type = 'l')
+plot(log(speed) ~ temp_c, arrange(d, temp_c), type = 'l')
+```
+
