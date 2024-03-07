@@ -84,3 +84,19 @@ figures/phylopics
 
 # ignore old code
 analysis/old-code
+
+# ignore uncropped resource rasters
+data/resource-rasters/uncropped-rasters
+
+# ignore old files
+models/binomial-gam-2024-03-04-boreal-caribou-caribou.rds
+models/binomial-gam-2024-03-05-boreal-caribou-caribou.rds
+models/binomial-gam-2024-03-05-boreal-caribou.rds
+models/gamma-gam-2024-03-04-boreal-caribou.rds
+models/gamma-gam-2024-03-05-boreal-caribou.rds
+data/standardized-speeds-2024-03-04.rds
+models/goat-30561-sensitivity-analysis-2023-11-16.rds
+models/movement-models-2024-03-03.rds
+models/movement-models-2024-03-04.rds
+models/movement-models-2024-03-05.rds
+talks/actws-2024-jasper-old.pptx
