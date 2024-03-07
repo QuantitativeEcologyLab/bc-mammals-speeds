@@ -1,4 +1,3 @@
-library('adehabitatHR') # for MCPs
 library('dplyr')        # for data wrangling
 library('tidyr')        # for data wrangling
 library('ggplot2')      # for fancy plots
@@ -19,8 +18,7 @@ locs <- tibble(city = c('Kelowna', 'Jasper'),
 
 # boreal datasets
 d <- readRDS('data/tracking-data/all-tracking-data-cleaned-2023-11-17-16-04.rds') %>%
-  filter(dataset_name %in% c('Canis_lupus_boreal',
-                             'Rangifer_tarandus_boreal')) %>%
+  filter(dataset_name == 'Rangifer_tarandus_boreal') %>%
   unnest(tel) %>%
   filter(! outlier) %>%
   select(location.long, location.lat, dataset_name, species) %>%
@@ -28,43 +26,25 @@ d <- readRDS('data/tracking-data/all-tracking-data-cleaned-2023-11-17-16-04.rds'
   st_set_crs('+proj=longlat') %>%
   st_transform('EPSG:3005')
 
-# caribou data only
-ggplot() +
-  theme_void() +
-  theme(legend.position = 'none') +
-  geom_sf(data = prov) +
-  geom_sf(data = filter(d, species == 'Rangifer tarandus'),
-          color = '#EE6677', alpha = 0.3) +
-  geom_sf(data = locs, size = 2) +
-  geom_label(aes(x = alb_long, y = alb_lat, label = city), locs,
-             nudge_x = 5e4, nudge_y = 5e4, label.size = 0, size = 6,
-             bg = 'transparent') +
-  coord_sf(xlim = c(2.5e5, 26e5), ylim = c(4.2e5, 18e5)) +
-  scale_color_bright(name = 'Species') +
-  labs(x = NULL, y = NULL)
-
-ggsave('figures/actws-2024-jasper/caribou-map.png',
-       width = 33.87, height = 19.05, units = 'cm', dpi = 600,
-       bg = 'transparent')
-
-# wolf and caribou data
-ggplot() +
-  theme_void() +
-  theme(legend.position = 'none') +
-  geom_sf(data = prov) +
-  geom_sf(aes(color = species), d, alpha = 0.3) +
-  geom_sf(data = locs, size = 2) +
-  geom_label(aes(x = alb_long, y = alb_lat, label = city), locs,
-             nudge_x = 5e4, nudge_y = 5e4, label.size = 0, size = 6,
-             bg = 'transparent') +
-  coord_sf(xlim = c(2.5e5, 26e5), ylim = c(4.2e5, 18e5)) +
-  scale_color_bright(name = 'Species') +
-  labs(x = NULL, y = NULL)
-
 # phylopics added manually using hex codes below
-color('bright')(2)
+pal <- c(color('bright')(7), brown = '#654321')
 
-ggsave('figures/actws-2024-jasper/boreal-telemetries-map.png',
+# caribou data only
+p_caribou <-
+  ggplot() +
+  theme_void() +
+  theme(legend.position = 'none') +
+  geom_sf(data = prov) +
+  geom_sf(data = d, color = '#EE6677') +
+  geom_sf(data = locs, size = 2) +
+  geom_label(aes(x = alb_long, y = alb_lat, label = city), locs,
+             nudge_x = 5e4, nudge_y = 5e4, label.size = 0, size = 6,
+             bg = 'transparent') +
+  coord_sf(xlim = c(2.5e5, 26e5), ylim = c(4.2e5, 18e5)) +
+  scale_color_bright(name = 'Species') +
+  labs(x = NULL, y = NULL)
+
+ggsave('figures/actws-2024-jasper/caribou-map.png', p_caribou,
        width = 33.87, height = 19.05, units = 'cm', dpi = 600,
        bg = 'transparent')
 
@@ -100,9 +80,7 @@ p_all <-
              nudge_x = 5e4, nudge_y = 5e4, label.size = 0, size = 6,
              bg = 'transparent') +
   coord_sf(xlim = c(2.5e5, 26e5), ylim = c(3.8e5, 18e5)) +
-  scale_color_manual('Species',
-                     values = c(as.character(khroma::color('bright')(6)),
-                                '#654321')) +
+  scale_color_manual('Species', values = pal) +
   labs(x = NULL, y = NULL)
 
 ggsave('figures/actws-2024-jasper/telemetries-all-map.png', plot = p_all,

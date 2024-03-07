@@ -3,7 +3,10 @@ source('functions/find_angle.R')
 outlier_plots <- function(telemetry, units = FALSE, ci_level = 0,
                           return = FALSE, reset_layout = TRUE,
                           cap_dt = TRUE) {
-  layout(matrix(1:4, ncol = 2, byrow = TRUE))
+  layout(matrix(c(1, 1, 2:5), ncol = 2, byrow = TRUE))
+  # plot entire telemetry
+  plot(telemetry$x, telemetry$y, type = 'l', xlab = 'x (m)',
+       ylab = 'y (m)')
   # plot of locations and velocities
   out <- outlie(telemetry, plot = TRUE)
   # min speed vs distance from tel center (SI units; no CIs)

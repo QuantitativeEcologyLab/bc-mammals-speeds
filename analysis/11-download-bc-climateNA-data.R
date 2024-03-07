@@ -12,28 +12,28 @@ library('purrr')      # for functional programming
 #' change the working directory as required by `climatenaR`
 setwd('ClimateNA_v742')
 
-if(! file.exists('bc-dem-z6.csv')) {
+if(! file.exists('bc-dem-z3.csv')) {
   #' convert the bc DEM to a csv as required by `climatenaR`
-  demToCSV(file = '../data/bc-dem-z6.tif',
+  demToCSV(file = '../data/bc-dem-z3.tif',
            outdir = '.', # save in climateBC folder
            srs = NULL) # keep NULL if in lat/long
   
   # check the csv
-  read.csv('bc-dem-z6.csv', nrows = 5)
+  read.csv('bc-dem-z3.csv', nrows = 5)
 }
 
-if(! dir.exists('bc-dem-z6')) dir.create('bc-dem-z6')
+if(! dir.exists('bc-dem-z3')) dir.create('bc-dem-z3')
 
 
 # download climate data projections ----
-if(! dir.exists('bc-dem-z6/projection-data')) {
-  dir.create('bc-dem-z6/projection-data')
+if(! dir.exists('bc-dem-z3/projection-data')) {
+  dir.create('bc-dem-z3/projection-data')
 }
 
 map(2011:2100,
     \(y) {
       cat(paste0('Downloading climate projections for ', y, '...\n'))
-      projClimateNA(file = 'bc-dem-z6.csv',
+      projClimateNA(file = 'bc-dem-z3.csv',
                     tFrame = 'M', # monthly averages
                     exe = 'ClimateNA_v7.42.exe', # must be in wd
                     scen = '8GCM', # 8GCMs_ensemble General Circulation Model
@@ -42,17 +42,17 @@ map(2011:2100,
     })
 
 # download historical climate data ----
-if(! dir.exists('bc-dem-z6/historical-data')) {
-  dir.create('bc-dem-z6/historical-data')
+if(! dir.exists('bc-dem-z3/historical-data')) {
+  dir.create('bc-dem-z3/historical-data')
 }
 
 # tracking data ranges from 1998 to 2021
 map(1998:2023,
     \(y) {
       cat(paste0('Downloading estimated historical data for ', y, '...\n'))
-      histClimateNA(file = 'bc-dem-z6.csv',
+      histClimateNA(file = 'bc-dem-z3.csv',
                     dateR = as.character(y), # year
                     tFrame = 'M', # monthly averages
                     exe = 'ClimateNA_v7.42.exe', # must be in wd
-                    outdir = 'bc-dem-z6/historical-data')
+                    outdir = 'bc-dem-z3/historical-data')
     })
