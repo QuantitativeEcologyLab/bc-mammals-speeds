@@ -3,18 +3,18 @@ library('lubridate') # for working with dates (force_tz(), etc.)
 library('purrr')     # for functional programming (map_***(), etc.)
 library('ctmm')      # for movement models
 library('sf')        # for spatial features
+library('ggplot2')   # for fancy plots
 source('functions/import_rda.R') # to convert Rda files to rds files
+source('data/bc-shapefile.R') # for shapefile of BC
 
-bc <- filter(canadianmaps::PROV, PREABBR == 'B.C.') %>%
-  st_geometry() %>%
-  st_as_sf()
+bc_tz <- 'America/Vancouver' # to avoid typos
 
 # import all telemetries separately ----
 # mountain goats ----
 goats <-
   readRDS('data/tracking-data/oreamnos-americanus-tels.rds') %>%
   mutate(animal = individual.local.identifier, # to add a column of ID
-         timezone = 'America/Vancouver',
+         timezone = bc_tz,
          species = 'Oreamnos americanus',
          dataset_name = 'Oreamnos_americanus',
          outlier = FALSE) # outlier column is not present
@@ -29,8 +29,8 @@ pumas <- bind_rows(
            animal = AnimalID,
            species = 'Puma concolor',
            dataset_name = 'Puma_concolor_2',
-           timestamp = ymd_hms(timestamp, tz = 'America/Vancouver'),
-           Time.Zone = 'America/Vancover') %>% # unique: PST, DST, PST/PDT
+           timestamp = ymd_hms(timestamp, tz = bc_tz),
+           Time.Zone = bc_tz) %>% # unique: PST, DST, PST/PDT: assume BC tz
     rename(individual.local.identifier = AnimalID,
            location.lat = Latitude,
            location.long = Longitude,
@@ -44,12 +44,13 @@ pumas <- bind_rows(
     mutate(animal = individual.local.identifier,
            species = 'Puma concolor',
            dataset_name = 'Puma_concolor_4',
-           timezone = 'America/Vancouver',
-           timestamp = ymd_hms(timestamp, tz = 'America/Vancouver'),
+           timezone = bc_tz,
+           timestamp = ymd_hms(timestamp, tz = bc_tz),
            outlier = FALSE) %>% # outlier column is missing
+    rename(temperature = external.temperature) %>%
     select(species, dataset_name, animal, individual.local.identifier,
            location.lat, location.long, timestamp, timezone,
-           gps.fix.type.raw, sensor.type, outlier))
+           gps.fix.type.raw, sensor.type, outlier, temperature))
 
 # sensor type column is not useful (only one value)
 unique(pumas$sensor.type)
@@ -57,21 +58,49 @@ unique(pumas$sensor.type)
 pumas <- select(pumas, ! sensor.type)
 
 # southern mountain caribou in south-eastern BC ----
-caribou_m <-
-  import_rda('data/tracking-data/Rangifer_tarandus.Rda',
-             object_name = 'data') %>%
+caribou_m <- import_rda('data/tracking-data/Rangifer_tarandus.Rda',
+           object_name = 'data') %>%
   as_tibble() %>%
   # "validated" column causes "error in `[<-`:! subscript out of bounds"
-  select(- 'Validated') %>%
+  select(! 'Validated')
+
+# two have "GMT?" as timezone, but they have similar activity patters to
+# the other caribou
+caribou_m %>%
+  group_by(AnimalID) %>%
+  summarise(GMT = any(Time.Zone == 'GMT?')) %>%
+  summarize(BC = sum(! GMT), GMT = sum(GMT))
+
+# all of them are in the same area (none in Alberta)
+ggplot(caribou_m) +
+  geom_sf(data = bc) +
+  geom_point(aes(Longitude, Latitude, col = Time.Zone))
+
+caribou_m <-
+  caribou_m %>%
   mutate(animal = AnimalID,
          species = 'Rangifer tarandus',
          dataset_name = 'Rangifer_tarandus_southern_mountain',
-         timestamp = ymd_hms(timestamp, tz = 'America/Vancouver')) %>%
+         timezone = bc_tz,
+         timestamp = ymd_hms(timestamp, tz = bc_tz))
+
+# plot activity by BC time (all timestamps seem to be in BC time)
+caribou_m %>%
+  group_by(AnimalID) %>%
+  arrange(AnimalID, timestamp) %>%
+  mutate(hour = hour(timestamp),
+         distance = sqrt((Longitude - lag(Longitude))^2 +
+                           (Latitude - lag(Latitude))^2)) %>%
+  ggplot() +
+  facet_wrap(~ Time.Zone) +
+  geom_smooth(aes(hour, distance), formula = y ~ s(x, k = 5, bs = 'cc'))
+
+caribou_m <- caribou_m %>%
   rename(individual.local.identifier = AnimalID,
          outlier = Outlier,
-         timezone = Time.Zone,
          location.lat = Latitude,
-         location.long = Longitude) %>%
+         location.long = Longitude,
+         temperature = Temperature) %>%
   select(species, dataset_name, animal, individual.local.identifier,
          location.lat, location.long, timestamp, timezone, outlier,
          DOP, PDOP, HDOP)
@@ -88,14 +117,25 @@ grizzly <-
          animal = AnimalID,
          species = 'Ursus arctos horribilis',
          dataset_name = 'Ursus_arctos_horribilis',
-         timestamp = ymd_hms(timestamp, tz = 'America/Vancouver')) %>%
+         timestamp = ymd_hms(timestamp, tz = bc_tz))
+
+# again, timestamp seems to be corrected to Vancouver time
+grizzly %>%
+  mutate(hour = hour(timestamp),
+         distance = sqrt((Longitude - lag(Longitude))^2 +
+                           (Latitude - lag(Latitude))^2)) %>%
+  ggplot() +
+  facet_wrap(~ Time.Zone) +
+  geom_smooth(aes(hour, distance), formula = y ~ s(x, k = 5, bs = 'cc'))
+
+grizzly <- grizzly %>%
   rename(individual.local.identifier = AnimalID,
          location.lat = Latitude,
          location.long = Longitude,
          timezone = Time.Zone,
          outlier = Outlier) %>%
   select(species, dataset_name, animal, individual.local.identifier,
-         location.lat, location.long, timestamp, timezone, outlier)
+       location.lat, location.long, timestamp, timezone, outlier)
 
 # elk in south-west AB & south-east BC ----
 # https://datarepository.movebank.org/entities/datapackage/3a171441-6c9b-4bf9-b2fd-0216d962f091
@@ -103,17 +143,27 @@ grizzly <-
 elk <- 
   read.csv('data/tracking-data/Elk in southwestern Alberta.csv') %>%
   rename(species = individual.taxon.canonical.name,
-         dataset_name = study.name) %>%
+         dataset_name = study.name,
+         temperature = external.temperature) %>%
   mutate(animal = as.character(individual.local.identifier),
          outlier = manually.marked.outlier == 'true',
-         timezone = 'UTC',
-         timestamp = ymd_hms(timestamp, tz = 'UTC')) %>%
+         timezone = bc_tz,
+         timestamp = ymd_hms(timestamp, tz = 'UTC') %>%
+           force_tz(bc_tz)) %>% # bc_tz causes parsing issues
   # remove duplicates (too few to make a difference anyway; 0.02%)
   group_by(animal) %>%
   ungroup() %>%
   select(species, dataset_name, animal, individual.local.identifier,
          location.lat, location.long, timestamp, timezone, outlier,
-         gps.dop, gps.fix.type.raw, gps.satellite.count)
+         gps.dop, gps.fix.type.raw, gps.satellite.count, temperature)
+
+# check activity levels by time of day
+elk %>%
+  mutate(hour = hour(timestamp),
+         distance = sqrt((location.long - lag(location.long))^2 +
+                           (location.lat - lag(location.lat))^2)) %>%
+  ggplot() +
+  geom_smooth(aes(hour, distance), formula = y ~ s(x, k = 5, bs = 'cc'))
 
 # some duplicates in the elk dataset (~0.02 % of the data)
 with(elk,
@@ -135,15 +185,16 @@ caribou_b <-
   mutate(individual.local.identifier = FieldID,
          location.lat = Latitude,
          location.long = Longitude,
-         timestamp = force_tz(FixDateTime, tz = 'America/Vancouver'),
-         timezone = 'America/Vancouver',
+         timestamp = force_tz(FixDateTime, tz = bc_tz),
+         timezone = bc_tz,
          animal = individual.local.identifier,
          species = 'Rangifer tarandus',
          dataset_name = 'Rangifer_tarandus_boreal',
-         outlier = FALSE) %>%
+         outlier = FALSE,
+         temperature = Temperature) %>%
   select(species, dataset_name, animal, individual.local.identifier,
          location.lat, location.long, timestamp, timezone, outlier,
-         NAV, HDOP)
+         NAV, HDOP, temperature)
 
 # boreal wolves ----
 wolves <-
@@ -151,15 +202,16 @@ wolves <-
   mutate(individual.local.identifier = FieldID,
          location.lat = Latitude,
          location.long = Longitude,
-         timestamp = force_tz(FixDateTime, tz = 'America/Vancouver'),
-         timezone = 'America/Vancouver',
+         timestamp = force_tz(FixDateTime, tz = bc_tz),
+         timezone = bc_tz,
          animal = individual.local.identifier,
          species = 'Canis_lupus',
          dataset_name = 'Canis_lupus_boreal',
-         outlier = FALSE) %>%
+         outlier = FALSE,
+         temperature = Temperature) %>%
   select(species, dataset_name, animal, individual.local.identifier,
          location.lat, location.long, timestamp, timezone, outlier,
-         NAV, HDOP)
+         NAV, HDOP, temperature)
 
 # bind all the telemetry objects into a single tibble ----
 d <-
@@ -227,13 +279,37 @@ if(FALSE) {
   
   # hex plot of straight-line displacement by time of day
   mov %>%
+    filter(distance < 100) %>% # remove locations in Germany
     ggplot() +
     facet_wrap(~ species, scales = 'free_y') +
     geom_hex(aes(time, distance), bins = 10) +
     labs(x = 'Time of day', y = 'SLD between consecutive locations') +
     theme_bw() +
     scale_fill_viridis_c('Count', limits = c(1, NA), trans = 'log10')
+  
+  mov %>%
+    filter(distance < 100) %>% # remove locations in Germany
+    ggplot() +
+    facet_wrap(~ species, scales = 'free_y') +
+    geom_smooth(aes(time, distance)) +
+    labs(x = 'Time of day', y = 'SLD between consecutive locations') +
+    scale_y_log10() +
+    theme_bw() +
+    scale_fill_viridis_c('Count', limits = c(1, NA), trans = 'log10')
 }
+
+# find unique time zones by species
+d %>%
+  group_by(species) %>%
+  summarize(tz = paste(unique(timezone), collapse = ', '),
+            tz2 = paste(unique(tz(timestamp)), collapse = ', '))
+
+# convert times to UTC
+d <- mutate(d, utc_timestamp = as.POSIXct(timestamp, 'UTC'))
+
+# check times (removing NA timestamps in next script)
+mean(with(d, timestamp - utc_timestamp) == 0, na.rm = TRUE)
+sum(with(d, timestamp - utc_timestamp) == 0, na.rm = TRUE)
 
 # save the full dataset ----
 saveRDS(d, 'data/tracking-data/all-tracking-data-not-cleaned.rds')
