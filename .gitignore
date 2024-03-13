@@ -100,3 +100,6 @@ models/movement-models-2024-03-03.rds
 models/movement-models-2024-03-04.rds
 models/movement-models-2024-03-05.rds
 talks/actws-2024-jasper-old.pptx
+
+# ignore movement models
+models/movement-models
